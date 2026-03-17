@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — VIIT Mart</title>
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .auth-page { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; background:var(--bg-primary); }
+    .auth-left { background:var(--gradient-hero); display:flex; flex-direction:column; justify-content:center; padding:60px; position:relative; overflow:hidden; }
+    .auth-left .orb { position:absolute; border-radius:50%; filter:blur(70px); pointer-events:none; }
+    .auth-left .o1 { width:400px; height:400px; background:rgba(99,102,241,0.3); top:-100px; right:-100px; }
+    .auth-left .o2 { width:300px; height:300px; background:rgba(16,185,129,0.2); bottom:-80px; left:-80px; }
+    .auth-left-content { position:relative; z-index:2; }
+    .auth-brand { font-size:2rem; font-weight:800; color:white; letter-spacing:-1px; margin-bottom:40px; }
+    .auth-tagline { font-size:2.4rem; font-weight:800; color:white; line-height:1.2; letter-spacing:-1px; margin-bottom:16px; }
+    .auth-tagline span { background:linear-gradient(135deg,#a5b4fc,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .auth-tagline-sub { color:rgba(255,255,255,0.65); font-size:0.95rem; line-height:1.7; margin-bottom:36px; }
+    .af { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+    .af-icon { width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .af-text { color:rgba(255,255,255,0.8); font-size:0.9rem; }
+    .auth-right { display:flex; align-items:flex-start; justify-content:center; padding:40px; background:var(--bg-secondary); overflow-y:auto; }
+    .auth-form-wrap { width:100%; max-width:480px; padding-top:20px; }
+    .auth-title { font-size:1.9rem; font-weight:800; letter-spacing:-0.5px; margin-bottom:6px; }
+    .auth-subtitle { color:var(--text-secondary); font-size:0.9rem; margin-bottom:28px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .role-tabs { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px; }
+    .role-tab { padding:14px; border-radius:14px; border:2px solid var(--border-color); background:var(--input-bg); cursor:pointer; text-align:center; transition:all 0.2s; font-weight:600; font-size:0.9rem; color:var(--text-secondary); }
+    .role-tab:hover { border-color:var(--accent-primary); color:var(--accent-primary); }
+    .role-tab.active { border-color:var(--accent-primary); background:rgba(99,102,241,0.08); color:var(--accent-primary); }
+    .role-tab .rt-icon { font-size:1.5rem; display:block; margin-bottom:5px; }
+    @media(max-width:768px) { .auth-page{grid-template-columns:1fr;} .auth-left{display:none;} .auth-right{padding:20px 16px;} .form-row{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader">
+  <div class="loader-logo">🎓 VIIT Mart</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <div class="auth-left-content">
+      <div class="auth-brand">🎓 VIIT Mart</div>
+      <h2 class="auth-tagline">Join the<br><span>Community!</span></h2>
+      <p class="auth-tagline-sub">Create your free account and start buying or selling on campus today. Takes less than 2 minutes.</p>
+      <div class="af"><div class="af-icon">🔒</div><div class="af-text">Secure signup — college roll number verified</div></div>
+      <div class="af"><div class="af-icon">🚀</div><div class="af-text">Start browsing and buying immediately</div></div>
+      <div class="af"><div class="af-icon">💸</div><div class="af-text">Sellers earn from day one after admin approval</div></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap intro-3d-card">
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;"><a href="index.html" style="color:var(--accent-primary);text-decoration:none;">← Back to Home</a></p>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">Choose your role and fill in your details</p>
+
+      <div class="role-tabs">
+        <div class="role-tab active" id="tab-buyer" onclick="selectRole('buyer')"><span class="rt-icon">🛒</span>Buyer</div>
+        <div class="role-tab" id="tab-seller" onclick="selectRole('seller')"><span class="rt-icon">🏷️</span>Seller</div>
+      </div>
+      <input type="hidden" id="selectedRole" value="buyer">
+
+      <form id="registerForm" onsubmit="handleRegister(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required">Full Name</label>
+            <div class="input-wrapper"><i class="fas fa-user input-icon-left"></i><input type="text" id="regName" class="form-control" placeholder="Rajesh Kumar" required></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Roll Number</label>
+            <div class="input-wrapper"><i class="fas fa-id-badge input-icon-left"></i><input type="text" id="regRoll" class="form-control" placeholder="21CS001" required></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required">Branch</label>
+            <select id="regBranch" class="form-control" required>
+              <option value="">Select Branch</option>
+              <option value="CSE">Computer Science (CSE)</option>
+              <option value="ECE">Electronics (ECE)</option>
+              <option value="EEE">Electrical (EEE)</option>
+              <option value="ME">Mechanical (ME)</option>
+              <option value="CE">Civil (CE)</option>
+              <option value="IT">Information Technology (IT)</option>
+              <option value="MBA">MBA</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Year</label>
+            <select id="regYear" class="form-control" required>
+              <option value="">Select Year</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required">Phone Number</label>
+            <div class="input-wrapper"><i class="fas fa-phone input-icon-left"></i><input type="tel" id="regPhone" class="form-control" placeholder="9876543210" pattern="[0-9]{10}" required></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email (Optional)</label>
+            <div class="input-wrapper"><i class="fas fa-envelope input-icon-left"></i><input type="email" id="regEmail" class="form-control" placeholder="you@viit.ac.in"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon-left"></i>
+            <input type="password" id="regPassword" class="form-control form-control-password" placeholder="Min 6 chars, 1 uppercase, 1 number" required minlength="6">
+            <button type="button" class="password-toggle" onclick="togglePassword('regPassword',this)"><i class="fas fa-eye"></i></button>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Must have 6+ characters, 1 uppercase letter, 1 number</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="regBtn">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+      </form>
+      <p style="text-align:center;font-size:0.9rem;color:var(--text-secondary);margin-top:20px;">
+        Already have an account? <a href="login.html" style="color:var(--accent-primary);font-weight:700;text-decoration:none;">Sign In</a>
+      </p>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+  if (Auth.isLoggedIn()) {
+    const u = Auth.getUser();
+    if (u.role === 'buyer') window.location.href = 'shop.html';
+    else if (u.role === 'seller') window.location.href = 'seller.html';
+  }
+
+  function selectRole(role) {
+    document.getElementById('selectedRole').value = role;
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + role).classList.add('active');
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById('regBtn');
+    const name = document.getElementById('regName').value.trim();
+    const roll = document.getElementById('regRoll').value.trim();
+    const password = document.getElementById('regPassword').value;
+
+    // Validate
+    if (!/[A-Za-z].*[A-Za-z].*[A-Za-z]/.test(name.replace(/\s/g,''))) { showToast('Name needs at least 3 alphabetic characters','error'); return; }
+    if (!/(?=.*[A-Z])(?=.*[0-9]).{6,}/.test(password)) { showToast('Password must have 6+ chars, 1 uppercase & 1 number','error'); return; }
+    if (!/^[0-9]{10}$/.test(document.getElementById('regPhone').value.trim())) { showToast('Phone must be exactly 10 digits','error'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+    try {
+      const { token, user } = await API.post('/auth/register', {
+        name, rollNumber: roll,
+        branch: document.getElementById('regBranch').value,
+        year: document.getElementById('regYear').value,
+        phone: document.getElementById('regPhone').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        password,
+        role: document.getElementById('selectedRole').value
+      });
+      Auth.setSession(token, user);
+      showToast(`Welcome to VIIT Mart, ${user.name}! 🎉`);
+      setTimeout(() => {
+        if (user.role === 'buyer') window.location.href = 'shop.html';
+        else if (user.role === 'seller') window.location.href = 'seller.html';
+      }, 900);
+    } catch(err) {
+      showToast(err.message || 'Registration failed', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Dashboard — VIIT Mart</title>
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .dash-layout { display: grid; grid-template-columns: 260px 1fr; gap: 28px; align-items: start; }
+    .dash-sidebar { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 20px; position: sticky; top: 90px; }
+    .dash-nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 4px; }
+    .dash-nav-item:hover, .dash-nav-item.active { background: rgba(99,102,241,0.08); color: var(--accent-primary); }
+    .dash-nav-item.active { background: var(--gradient-accent); color: white; }
+    .dash-section { display: none; }
+    .dash-section.active { display: block; }
+    .order-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .order-table th { text-align: left; padding: 14px 12px; font-weight: 700; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); }
+    .order-table td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .order-table tr:last-child td { border-bottom: none; }
+    .order-table tr:hover td { background: var(--bg-primary); }
+    @media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } .dash-sidebar { position: static; } }
+  </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+
+<nav class="navbar">
+  <div class="navbar-inner container">
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <div style="flex:1"></div>
+    <div class="nav-actions">
+      <button class="dark-toggle" id="darkModeToggle"></button>
+      <a href="shop.html" class="btn btn-ghost btn-sm"><i class="fas fa-store"></i> Browse</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-pad" style="padding-bottom:60px;">
+  <div class="container" style="padding-top:32px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;" data-reveal>
+      <div>
+        <h1 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;" id="dashTitle">Seller Dashboard</h1>
+        <p style="color:var(--text-muted);margin-top:4px;">Manage your listings, track orders & earnings</p>
+      </div>
+      <button class="btn btn-primary" onclick="showSection('list')"><i class="fas fa-plus"></i> List New Product</button>
+    </div>
+    <div class="dash-layout">
+      <div class="dash-sidebar" data-reveal="left">
+        <div style="text-align:center;padding:16px 0 20px;border-bottom:1px solid var(--border-color);margin-bottom:16px;">
+          <img id="profileAvatar" src="" style="width:68px;height:68px;border-radius:20px;margin-bottom:12px;border:3px solid var(--accent-primary);">
+          <div style="font-weight:800;font-size:1rem;" id="profileName">—</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="profileInfo">—</div>
+        </div>
+        <div class="dash-nav-item active" onclick="showSection('overview')"><i class="fas fa-home"></i> Overview</div>
+        <div class="dash-nav-item" onclick="showSection('products')"><i class="fas fa-box"></i> My Products</div>
+        <div class="dash-nav-item" onclick="showSection('orders')"><i class="fas fa-shopping-bag"></i> Orders Received</div>
+        <div class="dash-nav-item" onclick="showSection('list')"><i class="fas fa-plus-circle"></i> List Product</div>
+        <div class="dash-nav-item" onclick="showSection('notifs')"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
+        <div class="dash-nav-item" style="margin-top:12px;color:var(--accent-red);" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+      </div>
+
+      <div>
+        <!-- Overview -->
+        <div id="sec-overview" class="dash-section active" data-reveal>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;">
+            <div class="stat-card"><div class="stat-label">Products Listed</div><div class="stat-val" id="statProducts">—</div></div>
+            <div class="stat-card"><div class="stat-label">Orders Received</div><div class="stat-val" id="statOrders">—</div></div>
+            <div class="stat-card"><div class="stat-label">Pending Approval</div><div class="stat-val" id="statPending">—</div></div>
+          </div>
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;margin-bottom:20px;">
+            <h3 style="font-weight:800;margin-bottom:6px;">💡 Seller Tips</h3>
+            <ul style="list-style:none;font-size:0.9rem;color:var(--text-secondary);line-height:2;">
+              <li>✅ Products are listed after admin approval.</li>
+              <li>📸 Use clear, well-lit photos for better visibility.</li>
+              <li>💰 A listing fee of ₹15 is charged per sale.</li>
+              <li>📬 Admin acts as middleman — deliver products to admin.</li>
+            </ul>
+          </div>
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:16px;">Recent Orders</h3>
+            <div id="recentOrders"></div>
+          </div>
+        </div>
+
+        <!-- My Products -->
+        <div id="sec-products" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:16px;">My Products</h3>
+            <div id="productsTable"></div>
+          </div>
+        </div>
+
+        <!-- Orders Received -->
+        <div id="sec-orders" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:16px;">Orders Received</h3>
+            <div id="ordersTable"></div>
+          </div>
+        </div>
+
+        <!-- List Product -->
+        <div id="sec-list" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:32px;">
+            <h3 style="font-weight:800;margin-bottom:4px;">📦 List a New Product</h3>
+            <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:24px;">Fill out the form below. Admin will review and approve your listing.</p>
+            <form id="sellForm" onsubmit="submitProduct(event)">
+              <div class="form-group"><label class="form-label required">Product Title</label><input type="text" id="pTitle" class="form-control" placeholder="e.g., HP Laptop — Like New" required></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="furniture">Furniture</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
+                <div class="form-group"><label class="form-label required">Condition</label><select id="pCondition" class="form-control" required><option value="New">New (Unused)</option><option value="Like New">Like New</option><option value="Good">Good</option><option value="Fair">Fair</option></select></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                <div class="form-group"><label class="form-label required">Selling Price (₹)</label><input type="number" id="pPrice" class="form-control" placeholder="5000" min="1" required></div>
+                <div class="form-group"><label class="form-label">Original Price (₹)</label><input type="number" id="pOriginal" class="form-control" placeholder="Optional"></div>
+                <div class="form-group"><label class="form-label required">Quantity</label><input type="number" id="pQty" class="form-control" value="1" min="1" required></div>
+              </div>
+              <div class="form-group"><label class="form-label required">Description</label><textarea id="pDesc" class="form-control" rows="4" maxlength="200" placeholder="Describe the item clearly..." required></textarea><div id="charCount" style="font-size:0.75rem;color:var(--text-muted);text-align:right;margin-top:4px;">0 / 200</div></div>
+              <div class="form-group"><label class="form-label required">Image URL</label><input type="url" id="pImage" class="form-control" placeholder="https://images.unsplash.com/..." required><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Tip: Use Unsplash.com and copy the image URL</p></div>
+              <div class="form-group"><label class="form-label">Location on Campus</label><input type="text" id="pLocation" class="form-control" placeholder="North Campus, Hostel A..."></div>
+              <div style="background:rgba(245,158,11,0.08);border:1.5px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px;margin-bottom:20px;font-size:0.85rem;">
+                <i class="fas fa-info-circle" style="color:var(--accent-gold);"></i> <strong>Note:</strong> Admin may charge a listing fee and service fee upon approval. A ₹15 listing fee is deducted per sale.
+              </div>
+              <button type="submit" class="btn btn-primary btn-full btn-lg" id="sellBtn"><i class="fas fa-paper-plane"></i> Submit for Admin Approval</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="sec-notifs" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h3 style="font-weight:800;">Notifications</h3>
+              <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+            </div>
+            <div id="notifsContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+  let currentUser = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    currentUser = Auth.requireAuth(['seller']);
+    if (!currentUser) return;
+
+    document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&rounded=true&size=128`;
+    document.getElementById('profileName').textContent = currentUser.name;
+    document.getElementById('profileInfo').textContent = `${currentUser.branch} • Year ${currentUser.year}`;
+    document.getElementById('dashTitle').textContent = `Hello, ${currentUser.name.split(' ')[0]}! 👋`;
+
+    // Char count for description
+    document.getElementById('pDesc').addEventListener('input', function() {
+      document.getElementById('charCount').textContent = `${this.value.length} / 200`;
+    });
+
+    await Promise.all([loadProducts(), loadOrders(), loadNotifications()]);
+  });
+
+  async function loadProducts() {
+    try {
+      const products = await API.get('/products/mine');
+      const approved = products.filter(p => p.status === 'approved').length;
+      const pending = products.filter(p => p.status === 'pending').length;
+      document.getElementById('statProducts').textContent = products.length;
+      document.getElementById('statPending').textContent = pending;
+
+      const el = document.getElementById('productsTable');
+      if (!products.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No products listed yet. <button class="btn btn-primary btn-sm" onclick="showSection(\'list\')">List your first product</button></p>'; return; }
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="order-table">
+        <thead><tr><th>Product</th><th>Price</th><th>Category</th><th>Qty</th><th>Status</th><th>Listed</th></tr></thead>
+        <tbody>${products.map(p => `
+          <tr>
+            <td style="display:flex;align-items:center;gap:10px;min-width:180px;"><img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0;"><div><div style="font-weight:700;font-size:0.88rem;">${p.title.substring(0,30)}${p.title.length>30?'...':''}</div><div style="font-size:0.75rem;color:var(--text-muted);">${p.condition}</div></div></td>
+            <td style="font-weight:800;color:var(--accent-primary);">₹${p.price.toLocaleString()}</td>
+            <td style="text-transform:capitalize;font-size:0.85rem;">${p.category}</td>
+            <td style="font-weight:700;">${p.quantity}</td>
+            <td><span class="badge badge-${p.status}">${p.status.charAt(0).toUpperCase()+p.status.slice(1)}</span></td>
+            <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(p.created_at).toLocaleDateString()}</td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) {
+      document.getElementById('statProducts').textContent = '0';
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const orders = await API.get('/orders/received');
+      document.getElementById('statOrders').textContent = orders.length;
+      const renderTable = (orders, containerId) => {
+        const el = document.getElementById(containerId);
+        if (!orders.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No orders received yet</p>'; return; }
+        el.innerHTML = `<div style="overflow-x:auto;"><table class="order-table">
+          <thead><tr><th>Product</th><th>Buyer</th><th>Amount</th><th>Your Payout</th><th>Payment</th><th>Status</th></tr></thead>
+          <tbody>${orders.map(o => `
+            <tr>
+              <td style="font-weight:700;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.product_title}</td>
+              <td><div style="font-weight:700;font-size:0.88rem;">${o.buyer_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${o.buyer_phone}</div></td>
+              <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
+              <td style="font-weight:800;color:var(--accent-green);">₹${(o.seller_payout||0).toLocaleString()}</td>
+              <td style="font-size:0.8rem;font-weight:700;">${o.payment_method}</td>
+              <td><span class="status-badge status-${o.status.replace(/ /g,'-')}">${o.status.replace(/-/g,' ')}</span></td>
+            </tr>`).join('')}
+          </tbody></table></div>`;
+      };
+      renderTable(orders.slice(0,5), 'recentOrders');
+      renderTable(orders, 'ordersTable');
+    } catch {
+      document.getElementById('statOrders').textContent = '0';
+    }
+  }
+
+  async function loadNotifications() {
+    try {
+      const notifs = await API.get('/notifications');
+      const unread = notifs.filter(n => !n.is_read).length;
+      const badge = document.getElementById('navNotifBadge');
+      badge.textContent = unread;
+      badge.style.display = unread ? 'inline' : 'none';
+      const el = document.getElementById('notifsContent');
+      if (!notifs.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No notifications</p>'; return; }
+      el.innerHTML = notifs.map(n => `
+        <div style="padding:14px;border-bottom:1px solid var(--border-color);${!n.is_read ? 'border-left:3px solid var(--accent-primary);background:rgba(99,102,241,0.03);' : ''}">
+          <div style="font-weight:700;font-size:0.88rem;">${n.title}</div>
+          <div style="color:var(--text-secondary);font-size:0.83rem;margin-top:2px;">${n.message}</div>
+          <div style="font-size:0.74rem;color:var(--text-muted);margin-top:5px;">${new Date(n.created_at).toLocaleString()}</div>
+        </div>`).join('');
+    } catch {}
+  }
+
+  async function markAllRead() {
+    try { await API.put('/notifications/read', {}); await loadNotifications(); showToast('Marked as read', 'success'); } catch {}
+  }
+
+  async function submitProduct(e) {
+    e.preventDefault();
+    const btn = document.getElementById('sellBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    try {
+      await API.post('/products', {
+        title: document.getElementById('pTitle').value,
+        category: document.getElementById('pCategory').value,
+        condition: document.getElementById('pCondition').value,
+        price: parseFloat(document.getElementById('pPrice').value),
+        originalPrice: document.getElementById('pOriginal').value || null,
+        quantity: parseInt(document.getElementById('pQty').value),
+        description: document.getElementById('pDesc').value,
+        imageUrl: document.getElementById('pImage').value,
+        location: document.getElementById('pLocation').value
+      });
+      showToast('Product submitted for admin approval! 🎉', 'success');
+      document.getElementById('sellForm').reset();
+      document.getElementById('charCount').textContent = '0 / 200';
+      showSection('products');
+      await loadProducts();
+    } catch(err) {
+      showToast(err.message, 'error');
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for Admin Approval';
+  }
+
+  function showSection(id) {
+    document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  }
+</script>
+</body>
+</html>

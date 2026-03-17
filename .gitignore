@@ -1,0 +1,6 @@
+node_modules/
+.env
+viitmart.db
+viitmart.db-shm
+viitmart.db-wal
+.DS_Store

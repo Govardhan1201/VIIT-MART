@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal — VIIT Mart</title>
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --admin-accent: #6366f1; }
+    .admin-login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-hero);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-dash { display: grid; grid-template-columns: 240px 1fr; gap: 0; min-height: 100vh; }
+    .admin-sidebar {
+      background: #0d0d1f;
+      border-right: 1px solid #1a1a2f;
+      padding: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 240px;
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+    .admin-sidebar-header { padding: 24px 20px; border-bottom: 1px solid #1a1a2f; }
+    .admin-brand { font-size: 1.2rem; font-weight: 800; color: white; }
+    .admin-version { font-size: 0.7rem; color: #666; margin-top: 2px; }
+    .admin-nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 20px; cursor: pointer; transition: all 0.2s;
+      font-weight: 600; font-size: 0.88rem; color: #8888a8;
+      border-left: 3px solid transparent;
+    }
+    .admin-nav-item:hover { background: rgba(99,102,241,0.08); color: #a0a0ff; }
+    .admin-nav-item.active { background: rgba(99,102,241,0.12); color: #a5b4fc; border-left-color: var(--accent-primary); }
+    .admin-nav-item .nav-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.95rem; }
+    .admin-main { margin-left: 240px; min-height: 100vh; background: var(--bg-primary); }
+    .admin-topbar { background: var(--nav-bg); border-bottom: 1px solid var(--border-color); padding: 0 28px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 99; backdrop-filter: blur(20px); }
+    .admin-section { display: none; padding: 28px; }
+    .admin-section.active { display: block; animation: fadeIn 0.3s ease; }
+    .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .admin-stat-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 20px; transition: all 0.2s; }
+    .admin-stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .admin-stat-icon { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 14px; }
+    .admin-stat-val { font-size: 2rem; font-weight: 900; letter-spacing: -1px; }
+    .admin-stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .admin-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; margin-bottom: 24px; overflow: hidden; }
+    .admin-card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .admin-card-title { font-weight: 800; font-size: 1rem; }
+    .admin-card-body { padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    .data-table th { text-align: left; padding: 12px 16px; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid var(--border-color); white-space: nowrap; background: var(--bg-primary); }
+    .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(99,102,241,0.03); }
+    .approval-fee-row { display: flex; gap: 8px; align-items: center; }
+    .fee-input { width: 80px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 0.82rem; outline: none; }
+    .fee-input:focus { border-color: var(--accent-primary); }
+    @media (max-width: 900px) { .admin-sidebar { transform: translateX(-100%); } .admin-main { margin-left: 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ─── Admin Login Screen ────────────────────────────── -->
+<div id="adminLoginScreen" class="admin-login-page">
+  <div class="orb" style="width:500px;height:500px;background:rgba(99,102,241,0.3);top:-100px;right:-100px;"></div>
+  <div class="orb" style="width:400px;height:400px;background:rgba(139,92,246,0.25);bottom:-100px;left:-100px;"></div>
+  <div class="modal-box modal-sm" style="max-width:400px;animation:bounce-in 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:70px;height:70px;background:var(--gradient-accent);border-radius:22px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 15px 35px rgba(99,102,241,0.4);">👑</div>
+      <h2 style="font-size:1.6rem;font-weight:800;">Admin Portal</h2>
+      <p style="color:var(--text-muted);font-size:0.88rem;margin-top:6px;">Restricted access — Authorized personnel only</p>
+    </div>
+    <form id="adminLoginForm" onsubmit="adminLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Secret Code</label>
+        <div class="input-wrapper"><i class="fas fa-key input-icon-left"></i><input type="password" id="adminSecretCode" class="form-control" placeholder="Admin secret code" required></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Admin Password</label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock input-icon-left"></i>
+          <input type="password" id="adminPassword" class="form-control form-control-password" placeholder="Admin password" required>
+          <button type="button" class="password-toggle" onclick="togglePassword('adminPassword',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="adminLoginBtn">
+        <i class="fas fa-sign-in-alt"></i> Enter Admin Portal
+      </button>
+    </form>
+    <p style="text-align:center;margin-top:16px;font-size:0.82rem;color:var(--text-muted);">
+      <a href="index.html" style="color:var(--accent-primary);text-decoration:none;">← Back to Home</a>
+    </p>
+  </div>
+</div>
+
+<!-- ─── Admin Dashboard ──────────────────────────── -->
+<div id="adminDashboard" style="display:none;">
+  <div class="admin-dash">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <div class="admin-brand">👑 VIIT Mart</div>
+        <div class="admin-version">Admin Portal v2.0</div>
+      </div>
+      <div style="padding:12px 0;flex:1;">
+        <div class="admin-nav-item active" onclick="showAdmin('overview')"><div class="nav-icon" style="background:rgba(99,102,241,0.15);">📊</div>Overview</div>
+        <div class="admin-nav-item" onclick="showAdmin('approvals')"><div class="nav-icon" style="background:rgba(245,158,11,0.15);">⏳</div>Pending Approvals <span id="pendingBadge" style="background:#f59e0b;color:white;font-size:0.7rem;padding:2px 7px;border-radius:8px;margin-left:auto;display:none;"></span></div>
+        <div class="admin-nav-item" onclick="showAdmin('orders')"><div class="nav-icon" style="background:rgba(16,185,129,0.15);">📦</div>All Orders</div>
+        <div class="admin-nav-item" onclick="showAdmin('inventory')"><div class="nav-icon" style="background:rgba(139,92,246,0.15);">🗂️</div>Live Inventory</div>
+        <div class="admin-nav-item" onclick="showAdmin('community')"><div class="nav-icon" style="background:rgba(59,130,246,0.15);">👥</div>Community</div>
+        <div class="admin-nav-item" onclick="showAdmin('earnings')"><div class="nav-icon" style="background:rgba(245,158,11,0.15);">💰</div>Earnings</div>
+      </div>
+      <div style="padding:16px 20px;border-top:1px solid #1a1a2f;">
+        <div style="font-size:0.8rem;color:#555;margin-bottom:10px;">Logged in as Admin</div>
+        <div class="admin-nav-item" style="padding:10px 12px;border-radius:10px;color:#ef4444;" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="admin-main">
+      <!-- Topbar -->
+      <div class="admin-topbar">
+        <div>
+          <div style="font-weight:800;font-size:1.1rem;" id="adminPageTitle">Overview</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">VIIT Mart Admin Dashboard</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="dark-toggle" id="darkModeToggle"></button>
+          <a href="shop.html" class="btn btn-ghost btn-sm"><i class="fas fa-store"></i> View Shop</a>
+          <button class="btn btn-danger btn-sm" onclick="confirmFactoryReset()"><i class="fas fa-trash"></i> Factory Reset</button>
+        </div>
+      </div>
+
+      <!-- Overview -->
+      <div id="admin-overview" class="admin-section active">
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(99,102,241,0.12);">👥</div><div class="admin-stat-val" id="s-users">—</div><div class="admin-stat-label">Total Users</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(16,185,129,0.12);">📦</div><div class="admin-stat-val" id="s-products">—</div><div class="admin-stat-label">Live Products</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(245,158,11,0.12);">⏳</div><div class="admin-stat-val" id="s-pending">—</div><div class="admin-stat-label">Pending Review</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(59,130,246,0.12);">🛒</div><div class="admin-stat-val" id="s-orders">—</div><div class="admin-stat-label">Total Orders</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(139,92,246,0.12);">📬</div><div class="admin-stat-val" id="s-pending-orders">—</div><div class="admin-stat-label">Active Orders</div></div>
+          <div class="admin-stat-card" style="border-color: rgba(245,158,11,0.4);"><div class="admin-stat-icon" style="background:rgba(245,158,11,0.15);">💰</div><div class="admin-stat-val gradient-text" id="s-earnings">—</div><div class="admin-stat-label">Total Earnings</div></div>
+        </div>
+        <!-- Revenue card -->
+        <div class="admin-card" id="earningsBreakdownCard" style="display:none;">
+          <div class="admin-card-header"><div class="admin-card-title">💰 Platform Revenue Breakdown</div></div>
+          <div class="admin-card-body" style="padding:24px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;" id="earningsBreakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Approvals -->
+      <div id="admin-approvals" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">⏳ Pending Product Approvals</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadApprovals()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="admin-card-body" id="approvalsContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- All Orders -->
+      <div id="admin-orders" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">📦 All Orders Pipeline</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadOrders()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="admin-card-body" id="ordersContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Live Inventory -->
+      <div id="admin-inventory" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">🗂️ Live Inventory</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadInventory()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="admin-card-body" id="inventoryContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Community -->
+      <div id="admin-community" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">👥 Community Directory</div>
+          </div>
+          <div class="admin-card-body" id="communityContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Earnings -->
+      <div id="admin-earnings" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="admin-card-title">💰 Platform Earnings</div></div>
+          <div class="admin-card-body" style="padding:28px;" id="earningsContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box modal-sm">
+    <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:8px;" id="confirmTitle">Confirm</h2>
+    <p style="color:var(--text-secondary);margin-bottom:24px;" id="confirmMsg"></p>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+  let adminUser = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Check if admin session exists
+    const saved = localStorage.getItem('vm_admin_token');
+    if (saved) {
+      // Validate by loading stats
+      localStorage.setItem('vm_token', saved);
+      const savedUser = JSON.parse(localStorage.getItem('vm_admin_user') || 'null');
+      if (savedUser && savedUser.role === 'admin') {
+        adminUser = savedUser;
+        showDashboard();
+      }
+    }
+  });
+
+  async function adminLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('adminLoginBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+    try {
+      const { token, user } = await API.post('/auth/admin-login', {
+        secretCode: document.getElementById('adminSecretCode').value,
+        password: document.getElementById('adminPassword').value
+      });
+      adminUser = user;
+      // Store admin session separately
+      localStorage.setItem('vm_admin_token', token);
+      localStorage.setItem('vm_admin_user', JSON.stringify(user));
+      localStorage.setItem('vm_token', token);
+      localStorage.setItem('vm_user', JSON.stringify(user));
+      showToast('Welcome, Admin! 👑', 'success');
+      setTimeout(showDashboard, 600);
+    } catch(err) {
+      showToast(err.message || 'Invalid credentials', 'error');
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Enter Admin Portal';
+    }
+  }
+
+  function showDashboard() {
+    document.getElementById('adminLoginScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    loadStats();
+    loadApprovals();
+  }
+
+  function adminLogout() {
+    localStorage.removeItem('vm_admin_token');
+    localStorage.removeItem('vm_admin_user');
+    localStorage.removeItem('vm_token');
+    localStorage.removeItem('vm_user');
+    window.location.href = 'index.html';
+  }
+
+  async function loadStats() {
+    try {
+      const stats = await API.get('/admin/stats');
+      document.getElementById('s-users').textContent = stats.users;
+      document.getElementById('s-products').textContent = stats.products;
+      document.getElementById('s-pending').textContent = stats.pendingProducts;
+      document.getElementById('s-orders').textContent = stats.orders;
+      document.getElementById('s-pending-orders').textContent = stats.pendingOrders;
+      const earnings = stats.earnings;
+      document.getElementById('s-earnings').textContent = `₹${(earnings?.total||0).toLocaleString()}`;
+
+      if (earnings && earnings.total > 0) {
+        document.getElementById('earningsBreakdownCard').style.display = 'block';
+        document.getElementById('earningsBreakdown').innerHTML = `
+          <div style="text-align:center;padding:20px;background:var(--bg-primary);border-radius:14px;">
+            <div style="font-size:1.8rem;font-weight:800;color:var(--accent-green);">₹${(earnings.listing_fees||0).toLocaleString()}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;font-weight:700;">LISTING FEES</div>
+          </div>
+          <div style="text-align:center;padding:20px;background:var(--bg-primary);border-radius:14px;">
+            <div style="font-size:1.8rem;font-weight:800;color:var(--accent-primary);">₹${(earnings.service_fees||0).toLocaleString()}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;font-weight:700;">SERVICE FEES</div>
+          </div>
+          <div style="text-align:center;padding:20px;background:var(--bg-primary);border-radius:14px;">
+            <div style="font-size:1.8rem;font-weight:800;color:var(--accent-gold);">₹${(earnings.extra_charges||0).toLocaleString()}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;font-weight:700;">EXTRA CHARGES</div>
+          </div>`;
+      }
+
+      // Update pending badge
+      if (stats.pendingProducts > 0) {
+        const b = document.getElementById('pendingBadge');
+        b.textContent = stats.pendingProducts;
+        b.style.display = 'inline';
+      }
+    } catch(e) { showToast('Failed to load stats. Is server running?', 'error'); }
+  }
+
+  async function loadApprovals() {
+    try {
+      const products = await API.get('/products/pending');
+      const el = document.getElementById('approvalsContent');
+      if (!products.length) {
+        el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted);"><i class="fas fa-check-circle" style="font-size:3rem;color:var(--accent-green);opacity:0.5;margin-bottom:16px;"></i><p>No pending approvals. All caught up!</p></div>';
+        return;
+      }
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>Product</th><th>Seller</th><th>Price</th><th>Category</th><th>Set Fees</th><th>Actions</th></tr></thead>
+        <tbody>${products.map(p => `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:12px;min-width:180px;">
+                <img src="${p.image_url}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;flex-shrink:0;">
+                <div>
+                  <div style="font-weight:700;font-size:0.88rem;">${p.title.substring(0,35)}${p.title.length>35?'...':''}</div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);">${p.condition} • Qty: ${p.quantity}</div>
+                </div>
+              </div>
+            </td>
+            <td><div style="font-weight:700;font-size:0.88rem;">${p.seller_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${p.seller_roll}</div></td>
+            <td style="font-weight:800;color:var(--accent-primary);">₹${p.price.toLocaleString()}</td>
+            <td style="text-transform:capitalize;font-size:0.85rem;">${p.category}</td>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:200px;">
+                <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;">
+                  <span style="width:80px;color:var(--text-muted);">Listing Fee</span>
+                  <input type="number" class="fee-input" id="lf_${p.id}" value="0" min="0">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;">
+                  <span style="width:80px;color:var(--text-muted);">Service Fee</span>
+                  <input type="number" class="fee-input" id="sf_${p.id}" value="0" min="0">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;">
+                  <span style="width:80px;color:var(--text-muted);">Extra Charge</span>
+                  <input type="number" class="fee-input" id="pc_${p.id}" value="0" min="0">
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-success btn-sm" onclick="approveProduct(${p.id})"><i class="fas fa-check"></i> Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectProduct(${p.id})"><i class="fas fa-times"></i> Reject</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { document.getElementById('approvalsContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  async function approveProduct(id) {
+    try {
+      await API.put(`/products/${id}/approve`, {
+        listingFee: parseFloat(document.getElementById('lf_'+id)?.value || 0),
+        serviceFee: parseFloat(document.getElementById('sf_'+id)?.value || 0),
+        platformCharge: parseFloat(document.getElementById('pc_'+id)?.value || 0)
+      });
+      showToast('Product approved! ✅', 'success');
+      await Promise.all([loadApprovals(), loadStats()]);
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  async function rejectProduct(id) {
+    try {
+      await API.put(`/products/${id}/reject`, {});
+      showToast('Product rejected', 'info');
+      await loadApprovals();
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  async function loadOrders() {
+    try {
+      const orders = await API.get('/orders/all');
+      const el = document.getElementById('ordersContent');
+      if (!orders.length) {
+        el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted);"><i class="fas fa-box-open" style="font-size:3rem;opacity:0.3;margin-bottom:16px;"></i><p>No orders yet</p></div>';
+        return;
+      }
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>Order ID</th><th>Product</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Payment</th><th>Status</th><th>Update</th></tr></thead>
+        <tbody>${orders.map(o => `
+          <tr>
+            <td style="font-size:0.75rem;color:var(--text-muted);">${o.id.substring(0,12)}...</td>
+            <td style="font-weight:700;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.product_title}</td>
+            <td><div style="font-weight:700;font-size:0.85rem;">${o.buyer_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${o.buyer_phone}</div></td>
+            <td><div style="font-weight:700;font-size:0.85rem;">${o.seller_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${o.seller_phone}</div></td>
+            <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
+            <td style="font-size:0.8rem;font-weight:700;">${o.payment_method}</td>
+            <td><span class="status-badge status-${o.status.replace(/ /g,'-').replace(/\//g,'')}">${o.status.replace(/-/g,' ')}</span></td>
+            <td>
+              <select class="sort-select" style="font-size:0.78rem;padding:6px 8px;" onchange="updateOrderStatus('${o.id}', this.value)">
+                <option value="" disabled ${!o.status?'selected':''}>Change...</option>
+                <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
+                <option value="seller-contacted" ${o.status==='seller-contacted'?'selected':''}>Seller Contacted</option>
+                <option value="seller-delivered-to-admin" ${o.status==='seller-delivered-to-admin'?'selected':''}>At Admin</option>
+                <option value="buyer-notified" ${o.status==='buyer-notified'?'selected':''}>Buyer Notified</option>
+                <option value="completed" ${o.status==='completed'?'selected':''}>Completed</option>
+                <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Cancelled</option>
+              </select>
+            </td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { document.getElementById('ordersContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  async function updateOrderStatus(orderId, status) {
+    if (!status) return;
+    try {
+      await API.put(`/orders/${orderId}/status`, { status });
+      showToast(`Order status → "${status.replace(/-/g,' ')}"`, 'success');
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  async function loadInventory() {
+    try {
+      const products = await API.get('/products/all');
+      const el = document.getElementById('inventoryContent');
+      if (!products.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No live products</p>'; return; }
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Qty</th><th>Seller</th><th>Rating</th><th>Action</th></tr></thead>
+        <tbody>${products.map(p => `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+                <div style="font-weight:700;font-size:0.87rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.title}</div>
+              </div>
+            </td>
+            <td style="text-transform:capitalize;font-size:0.85rem;">${p.category}</td>
+            <td style="font-weight:800;color:var(--accent-primary);">₹${p.price.toLocaleString()}</td>
+            <td style="font-weight:700;">${p.quantity}</td>
+            <td style="font-size:0.85rem;">${p.seller_name}</td>
+            <td><i class="fas fa-star" style="color:#f59e0b;font-size:0.8rem;"></i> ${(p.rating||4.5).toFixed(1)}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button></td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { document.getElementById('inventoryContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  async function deleteProduct(id) {
+    try {
+      await API.delete(`/products/${id}`);
+      showToast('Product removed', 'info');
+      await loadInventory();
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  async function loadCommunity() {
+    try {
+      const users = await API.get('/admin/users');
+      const el = document.getElementById('communityContent');
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>Name</th><th>Roll No</th><th>Branch</th><th>Year</th><th>Phone</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody>${users.filter(u => u.role !== 'admin').map(u => `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=6366f1&color=fff&size=36&rounded=true" style="width:36px;height:36px;border-radius:9px;">
+                <div style="font-weight:700;font-size:0.87rem;">${u.name}</div>
+              </div>
+            </td>
+            <td style="font-size:0.85rem;font-weight:700;">${u.roll_number}</td>
+            <td style="font-size:0.85rem;">${u.branch}</td>
+            <td style="font-size:0.85rem;">${u.year}</td>
+            <td style="font-size:0.85rem;">${u.phone}</td>
+            <td><span class="badge ${u.role==='seller' ? 'badge-approved' : 'badge-condition'}">${u.role}</span></td>
+            <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(u.registered_at).toLocaleDateString()}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.roll_number}','${u.name}')"><i class="fas fa-user-times"></i></button></td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { document.getElementById('communityContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  async function deleteUser(roll, name) {
+    document.getElementById('confirmTitle').textContent = '⚠️ Delete User';
+    document.getElementById('confirmMsg').textContent = `Are you sure you want to delete ${name} (${roll})? This cannot be undone.`;
+    document.getElementById('confirmActionBtn').onclick = async () => {
+      try {
+        await API.delete(`/admin/users/${roll}`);
+        showToast(`User ${name} removed`, 'info');
+        closeModal('confirmModal');
+        loadCommunity();
+      } catch(err) { showToast(err.message, 'error'); }
+    };
+    openModal('confirmModal');
+  }
+
+  async function loadEarnings() {
+    try {
+      const stats = await API.get('/admin/stats');
+      const e = stats.earnings || {};
+      document.getElementById('earningsContent').innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:24px;">
+          <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
+            <div style="font-size:2.2rem;font-weight:800;color:var(--accent-green);">₹${(e.listing_fees||0).toLocaleString()}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Listing Fees</div>
+          </div>
+          <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
+            <div style="font-size:2.2rem;font-weight:800;color:var(--accent-primary);">₹${(e.service_fees||0).toLocaleString()}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Service Fees</div>
+          </div>
+          <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
+            <div style="font-size:2.2rem;font-weight:800;color:var(--accent-gold);">₹${(e.extra_charges||0).toLocaleString()}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Extra Charges</div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12));border:2px solid rgba(99,102,241,0.3);border-radius:16px;padding:24px;text-align:center;">
+            <div style="font-size:2.8rem;font-weight:900;" class="gradient-text">₹${(e.total||0).toLocaleString()}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Total Revenue</div>
+          </div>
+        </div>`;
+    } catch(e) { document.getElementById('earningsContent').innerHTML = '<p style="text-align:center;color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  function showAdmin(section) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('admin-' + section).classList.add('active');
+    event.currentTarget.classList.add('active');
+    const titles = { overview:'Overview', approvals:'Pending Approvals', orders:'All Orders', inventory:'Live Inventory', community:'Community Directory', earnings:'Platform Earnings' };
+    document.getElementById('adminPageTitle').textContent = titles[section] || section;
+    // Load data for section
+    if (section === 'orders') loadOrders();
+    else if (section === 'inventory') loadInventory();
+    else if (section === 'community') loadCommunity();
+    else if (section === 'earnings') loadEarnings();
+    else if (section === 'approvals') loadApprovals();
+  }
+
+  function confirmFactoryReset() {
+    document.getElementById('confirmTitle').textContent = '🔴 Factory Reset';
+    document.getElementById('confirmMsg').textContent = 'This will delete ALL orders, products, and non-admin users. This action CANNOT be undone. Are you absolutely sure?';
+    document.getElementById('confirmActionBtn').onclick = async () => {
+      try {
+        await API.post('/admin/reset', {});
+        showToast('Factory reset complete', 'info');
+        closeModal('confirmModal');
+        loadStats();
+      } catch(err) { showToast(err.message, 'error'); }
+    };
+    openModal('confirmModal');
+  }
+</script>
+</body>
+</html>

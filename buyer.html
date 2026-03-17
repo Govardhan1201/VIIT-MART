@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard — VIIT Mart</title>
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .dash-layout { display: grid; grid-template-columns: 260px 1fr; gap: 28px; align-items: start; }
+    .dash-sidebar { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 20px; position: sticky; top: 90px; }
+    .dash-nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 4px; }
+    .dash-nav-item:hover, .dash-nav-item.active { background: rgba(99,102,241,0.08); color: var(--accent-primary); }
+    .dash-nav-item.active { background: var(--gradient-accent); color: white; }
+    .dash-section { display: none; }
+    .dash-section.active { display: block; }
+    .order-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .order-table th { text-align: left; padding: 14px 12px; font-weight: 700; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); white-space: nowrap; }
+    .order-table td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .order-table tr:last-child td { border-bottom: none; }
+    .order-table tr:hover td { background: var(--bg-primary); }
+    @media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } .dash-sidebar { position: static; } }
+  </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-inner container">
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <div style="flex:1"></div>
+    <div class="nav-actions">
+      <button class="dark-toggle" id="darkModeToggle"></button>
+      <a href="shop.html" class="btn btn-primary btn-sm"><i class="fas fa-store"></i> Shop</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-pad" style="padding-bottom:60px;">
+  <div class="container" style="padding-top:32px;">
+    <!-- Header -->
+    <div style="margin-bottom:28px;" data-reveal>
+      <h1 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;" id="dashTitle">My Dashboard</h1>
+      <p id="dashSubtitle" style="color:var(--text-muted);margin-top:4px;">Manage your orders, wishlist and account</p>
+    </div>
+
+    <div class="dash-layout">
+      <!-- Sidebar Nav -->
+      <div class="dash-sidebar" data-reveal="left">
+        <!-- Profile Card -->
+        <div style="text-align:center;padding:16px 0 20px;border-bottom:1px solid var(--border-color);margin-bottom:16px;">
+          <img id="profileAvatar" src="" style="width:68px;height:68px;border-radius:20px;margin-bottom:12px;border:3px solid var(--accent-primary);">
+          <div style="font-weight:800;font-size:1rem;" id="profileName">—</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="profileInfo">—</div>
+        </div>
+        <div class="dash-nav-item active" onclick="showSection('overview')"><i class="fas fa-home"></i> Overview</div>
+        <div class="dash-nav-item" onclick="showSection('orders')"><i class="fas fa-box"></i> My Orders</div>
+        <div class="dash-nav-item" onclick="showSection('wishlist')"><i class="fas fa-heart"></i> Wishlist</div>
+        <div class="dash-nav-item" onclick="showSection('notifs')"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
+        <div class="dash-nav-item" style="margin-top:12px;color:var(--accent-red);" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+      </div>
+
+      <!-- Content -->
+      <div>
+        <!-- Overview -->
+        <div id="sec-overview" class="dash-section active" data-reveal>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px;" id="statsGrid">
+            <div class="stat-card"><div class="stat-label">Orders Placed</div><div class="stat-val" id="statOrders">—</div></div>
+            <div class="stat-card"><div class="stat-label">Wishlist Items</div><div class="stat-val" id="statWishlist">—</div></div>
+            <div class="stat-card"><div class="stat-label">Cart Items</div><div class="stat-val" id="statCart">—</div></div>
+          </div>
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:20px;">Recent Orders</h3>
+            <div id="recentOrdersTable"></div>
+          </div>
+        </div>
+
+        <!-- Orders -->
+        <div id="sec-orders" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:20px;">All My Orders</h3>
+            <div id="ordersTableFull"></div>
+          </div>
+        </div>
+
+        <!-- Wishlist -->
+        <div id="sec-wishlist" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <h3 style="font-weight:800;margin-bottom:20px;">❤️ My Wishlist</h3>
+            <div id="wishlistContent"></div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="sec-notifs" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h3 style="font-weight:800;">Notifications</h3>
+              <button class="btn btn-ghost btn-sm" onclick="markAllReadDash()">Mark all read</button>
+            </div>
+            <div id="notifsContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+  let currentUser = null;
+  let orders = [];
+  let notifs = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    currentUser = Auth.requireAuth(['buyer']);
+    if (!currentUser) return;
+
+    document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&rounded=true&size=128`;
+    document.getElementById('profileName').textContent = currentUser.name;
+    document.getElementById('profileInfo').textContent = `${currentUser.branch} • ${currentUser.year}${currentUser.year==='1'?'st':currentUser.year==='2'?'nd':currentUser.year==='3'?'rd':'th'} Year`;
+    document.getElementById('dashTitle').textContent = `Welcome, ${currentUser.name.split(' ')[0]}! 👋`;
+
+    await loadOrders();
+    await loadNotifications();
+    loadWishlistStats();
+    loadCartStats();
+  });
+
+  async function loadOrders() {
+    try {
+      orders = await API.get('/orders/mine');
+      document.getElementById('statOrders').textContent = orders.length;
+      renderOrdersTable('recentOrdersTable', orders.slice(0, 5));
+      renderOrdersTable('ordersTableFull', orders);
+    } catch (e) {
+      document.getElementById('statOrders').textContent = '0';
+    }
+  }
+
+  function renderOrdersTable(containerId, orderList) {
+    const el = document.getElementById(containerId);
+    if (!orderList.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No orders yet. <a href="shop.html" style="color:var(--accent-primary);">Browse products</a></p>'; return; }
+    el.innerHTML = `<div style="overflow-x:auto;"><table class="order-table">
+      <thead><tr><th>Product</th><th>Price</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${orderList.map(o => `
+        <tr>
+          <td><div style="font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.product_title}</div><div style="font-size:0.75rem;color:var(--text-muted);">From: ${o.seller_name}</div></td>
+          <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
+          <td><span style="font-size:0.8rem;font-weight:700;">${o.payment_method}</span></td>
+          <td><span class="status-badge status-${o.status.replace(/ /g,'-')}">${o.status.replace(/-/g,' ')}</span></td>
+          <td style="font-size:0.82rem;color:var(--text-muted);">${new Date(o.ordered_at).toLocaleDateString()}</td>
+        </tr>`).join('')}
+      </tbody></table></div>`;
+  }
+
+  async function loadNotifications() {
+    try {
+      notifs = await API.get('/notifications');
+      const unread = notifs.filter(n => !n.is_read).length;
+      const badge = document.getElementById('navNotifBadge');
+      badge.textContent = unread;
+      badge.style.display = unread ? 'inline' : 'none';
+      renderNotifs();
+    } catch {}
+  }
+
+  function renderNotifs() {
+    const el = document.getElementById('notifsContent');
+    if (!notifs.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No notifications yet</p>'; return; }
+    el.innerHTML = notifs.map(n => `
+      <div style="padding:16px;border-bottom:1px solid var(--border-color);${!n.is_read ? 'border-left:3px solid var(--accent-primary);background:rgba(99,102,241,0.03);' : ''}">
+        <div style="font-weight:700;font-size:0.9rem;">${n.title}</div>
+        <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:2px;">${n.message}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">${new Date(n.created_at).toLocaleString()}</div>
+      </div>`).join('');
+  }
+
+  async function markAllReadDash() {
+    try { await API.put('/notifications/read', {}); await loadNotifications(); showToast('All notifications marked as read', 'success'); } catch {}
+  }
+
+  function loadWishlistStats() {
+    const wl = JSON.parse(localStorage.getItem('vm_wishlist') || '[]');
+    document.getElementById('statWishlist').textContent = wl.length;
+    const el = document.getElementById('wishlistContent');
+    if (!wl.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">Wishlist is empty. <a href="shop.html" style="color:var(--accent-primary);">Browse products</a></p>'; return; }
+    el.innerHTML = wl.map(item => `
+      <div style="display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-color);align-items:center;">
+        <img src="${item.image_url}" style="width:64px;height:64px;object-fit:cover;border-radius:12px;">
+        <div style="flex:1;"><div style="font-weight:700;">${item.title}</div><div style="color:var(--accent-primary);font-weight:800;margin-top:4px;">₹${item.price.toLocaleString()}</div></div>
+        <a href="shop.html" class="btn btn-primary btn-sm">View in Shop</a>
+      </div>`).join('');
+  }
+
+  function loadCartStats() {
+    const cart = JSON.parse(localStorage.getItem('vm_cart') || '[]');
+    document.getElementById('statCart').textContent = cart.length;
+  }
+
+  function showSection(id) {
+    document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+</script>
+</body>
+</html>

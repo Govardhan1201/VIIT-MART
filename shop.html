@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — VIIT Mart</title>
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .shop-layout { display: grid; grid-template-columns: 280px 1fr; gap: 28px; align-items: start; }
+    .shop-sidebar { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 24px; position: sticky; top: 90px; }
+    .sidebar-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 14px; }
+    .cat-list { list-style: none; }
+    .cat-list li { padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+    .cat-list li:hover, .cat-list li.active { background: var(--gradient-accent); color: white; }
+    .sort-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .result-info { font-size: 0.88rem; color: var(--text-muted); font-weight: 600; }
+    .sort-select { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-family: inherit; font-size: 0.88rem; outline: none; }
+    .no-products { text-align: center; padding: 80px 20px; }
+    /* Cart drawer */
+    .cart-drawer {
+      position: fixed;
+      right: 0; top: 0; bottom: 0;
+      width: 420px;
+      background: var(--bg-secondary);
+      border-left: 1.5px solid var(--border-color);
+      z-index: 3000;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -20px 0 60px rgba(0,0,0,0.2);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .cart-drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .cart-drawer-footer { padding: 20px 24px; border-top: 1px solid var(--border-color); background: var(--bg-card); }
+    .cart-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-color); align-items: center; }
+    .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-title { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cart-item-price { font-weight: 800; color: var(--accent-primary); font-size: 0.95rem; margin-top: 3px; }
+    .cart-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 2999; display: none; }
+    .cart-overlay.show { display: block; }
+    .product-detail-img-wrap { position: relative; overflow: hidden; border-radius: 16px; }
+    .product-detail-img-wrap img { width: 100%; height: 280px; object-fit: cover; }
+    @media (max-width: 900px) { .shop-layout { grid-template-columns: 1fr; } .shop-sidebar { position: static; } .cart-drawer { width: 100%; } }
+  </style>
+</head>
+<body>
+<!-- Loader -->
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="navbar-inner container">
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <div class="nav-search">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="searchInput" placeholder="Search products, services..." oninput="handleSearch(this.value)" autocomplete="off">
+      <div class="search-suggestions" id="searchSuggestions"></div>
+    </div>
+    <div class="nav-actions">
+      <button class="dark-toggle" id="darkModeToggle" title="Toggle Dark Mode"></button>
+      <div class="nav-icon-btn" id="wishlistBtn" onclick="openWishlistModal()" title="Wishlist" style="display:none;">
+        <i class="far fa-heart"></i>
+        <span class="nav-badge" id="wishlistBadge" style="display:none;">0</span>
+      </div>
+      <div class="nav-icon-btn" id="notifBtn" onclick="toggleNotifPanel()" title="Notifications" style="display:none; position:relative;">
+        <i class="fas fa-bell"></i>
+        <span class="nav-badge" id="notifBadge" style="display:none;">0</span>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-header"><span style="font-weight:700;">Notifications</span><button onclick="markAllRead(event)" style="font-size:0.78rem;color:var(--accent-primary);background:none;border:none;cursor:pointer;">Mark all read</button></div>
+          <div id="notifList" style="max-height:340px;overflow-y:auto;"></div>
+        </div>
+      </div>
+      <div class="nav-icon-btn" id="cartBtn" onclick="openCart()" title="Cart" style="display:none; position:relative;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="nav-badge" id="cartBadge" style="display:none;">0</span>
+      </div>
+      <div id="guestNav" class="nav-actions" style="gap:8px;">
+        <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
+      </div>
+      <div class="nav-icon-btn" id="userAvatarBtn" onclick="toggleUserMenu()" style="display:none;overflow:hidden;padding:0;">
+        <img id="userAvatarImg" src="" alt="User" style="width:100%;height:100%;object-fit:cover;">
+        <div class="dropdown-panel" id="userDropdown" style="top:52px;">
+          <div class="dropdown-header"><div id="ddName" style="font-weight:700;"></div><div id="ddRole" style="font-size:0.8rem;color:var(--text-muted);"></div></div>
+          <div class="dropdown-item" onclick="goDashboard()"><div class="di-icon" style="background:rgba(99,102,241,0.1);">📊</div>Dashboard</div>
+          <div class="dropdown-item" id="dropSellLink" onclick="openSellModal()" style="display:none;"><div class="di-icon" style="background:rgba(16,185,129,0.1);">➕</div>Sell Product</div>
+          <div class="dropdown-item" onclick="Auth.logout()"><div class="di-icon" style="background:rgba(239,68,68,0.08);">🚪</div><span style="color:var(--accent-red)">Logout</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Cart Overlay & Drawer -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer-header">
+    <h2 style="font-size:1.3rem;font-weight:800;">🛒 Your Cart</h2>
+    <button onclick="closeCart()" style="background:none;border:none;cursor:pointer;font-size:1.4rem;color:var(--text-muted);">✕</button>
+  </div>
+  <div class="cart-drawer-body" id="cartBody"><p style="text-align:center;padding:40px;color:var(--text-muted);">Your cart is empty</p></div>
+  <div class="cart-drawer-footer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-weight:700;">Total</span>
+      <span style="font-size:1.5rem;font-weight:800;color:var(--accent-primary);" id="cartTotal">₹0</span>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="proceedCheckout()"><i class="fas fa-credit-card"></i> Checkout</button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main class="page-pad" style="min-height:80vh;padding-bottom:60px;">
+  <div class="container" style="padding-top:40px;">
+    <!-- Category bar (mobile) -->
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:16px;margin-bottom:24px;" id="mobileCatBar">
+      <span class="cat-chip active" onclick="filterCat('all',this)">🔥 All</span>
+      <span class="cat-chip" onclick="filterCat('electronics',this)">💻 Electronics</span>
+      <span class="cat-chip" onclick="filterCat('books',this)">📚 Books</span>
+      <span class="cat-chip" onclick="filterCat('fashion',this)">👕 Fashion</span>
+      <span class="cat-chip" onclick="filterCat('furniture',this)">🪑 Furniture</span>
+      <span class="cat-chip" onclick="filterCat('services',this)">🛠️ Services</span>
+      <span class="cat-chip" onclick="filterCat('sports',this)">⚽ Sports</span>
+    </div>
+
+    <div class="shop-layout">
+      <!-- Sidebar -->
+      <aside class="shop-sidebar" style="display:none;" id="desktopSidebar">
+        <div class="sidebar-title">Categories</div>
+        <ul class="cat-list" id="catList">
+          <li class="active" onclick="filterCat('all',this)" data-cat="all">🔥 All Products</li>
+          <li onclick="filterCat('electronics',this)" data-cat="electronics">💻 Electronics</li>
+          <li onclick="filterCat('books',this)" data-cat="books">📚 Books &amp; Notes</li>
+          <li onclick="filterCat('fashion',this)" data-cat="fashion">👕 Fashion</li>
+          <li onclick="filterCat('furniture',this)" data-cat="furniture">🪑 Furniture</li>
+          <li onclick="filterCat('services',this)" data-cat="services">🛠️ Services</li>
+          <li onclick="filterCat('sports',this)" data-cat="sports">⚽ Sports</li>
+        </ul>
+        <div class="sidebar-title" style="margin-top:24px;">Price Range</div>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="minPrice" class="form-control" placeholder="Min ₹" oninput="applyFilters()">
+          <input type="number" id="maxPrice" class="form-control" placeholder="Max ₹" oninput="applyFilters()">
+        </div>
+      </aside>
+
+      <!-- Products -->
+      <div>
+        <div class="sort-bar">
+          <div class="result-info" id="resultInfo">Loading products...</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <label style="font-size:0.85rem;color:var(--text-muted);font-weight:600;">Sort by</label>
+            <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+              <option value="newest">Newest First</option>
+              <option value="price-low">Price: Low → High</option>
+              <option value="price-high">Price: High → Low</option>
+              <option value="rating">Best Rating</option>
+            </select>
+          </div>
+        </div>
+        <div class="products-grid" id="productsGrid">
+          <!-- Skeleton loaders -->
+          ${Array(8).fill('<div class="product-card"><div class="skeleton" style="height:200px;"></div><div style="padding:16px"><div class="skeleton" style="height:18px;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;width:60%;"></div></div></div>').join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Product Detail Modal -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box modal-lg" id="productModalContent"></div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal-box modal-sm">
+    <button class="modal-close" onclick="closeModal('paymentModal')"><i class="fas fa-times"></i></button>
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;">💳 Payment</h2>
+    <div style="background:var(--bg-primary);border-radius:12px;padding:14px;margin-bottom:20px;" id="paymentSummary"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <button class="btn btn-ghost" id="codBtn" onclick="selectPayment('COD')" style="flex-direction:column;gap:4px;padding:20px 12px;">
+        <i class="fas fa-money-bill-wave" style="font-size:1.6rem;color:#10b981;"></i><span>Cash on Delivery</span>
+      </button>
+      <button class="btn btn-ghost" id="upiBtn" onclick="selectPayment('UPI')" style="flex-direction:column;gap:4px;padding:20px 12px;">
+        <i class="fas fa-qrcode" style="font-size:1.6rem;color:var(--accent-primary);"></i><span>UPI Payment</span>
+      </button>
+    </div>
+    <div id="upiQR" style="display:none;text-align:center;margin-bottom:16px;">
+      <p style="font-weight:700;margin-bottom:10px;">Scan to Pay</p>
+      <div style="display:inline-block;background:white;padding:12px;border-radius:12px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=viitmart@upi" alt="UPI QR" style="width:150px;height:150px;">
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-top:8px;">UPI ID: viitmart@upi</p>
+    </div>
+    <button class="btn btn-primary btn-full" id="confirmPayBtn" onclick="confirmOrder()" disabled>Confirm Order</button>
+  </div>
+</div>
+
+<!-- Wishlist Modal -->
+<div class="modal-overlay" id="wishlistModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('wishlistModal')"><i class="fas fa-times"></i></button>
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:20px;">❤️ Wishlist</h2>
+    <div id="wishlistBody"></div>
+  </div>
+</div>
+
+<!-- Sell Product Modal -->
+<div class="modal-overlay" id="sellModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('sellModal')"><i class="fas fa-times"></i></button>
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:20px;">📦 List a Product</h2>
+    <form id="sellForm" onsubmit="submitProduct(event)">
+      <div class="form-group"><label class="form-label required">Product Title</label><input type="text" id="pTitle" class="form-control" placeholder="e.g., iPhone 13 — Like New" required></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="furniture">Furniture</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
+        <div class="form-group"><label class="form-label required">Condition</label><select id="pCondition" class="form-control" required><option value="New">New</option><option value="Like New">Like New</option><option value="Good">Good</option><option value="Fair">Fair</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group"><label class="form-label required">Selling Price (₹)</label><input type="number" id="pPrice" class="form-control" placeholder="5000" min="1" required></div>
+        <div class="form-group"><label class="form-label">Original Price (₹)</label><input type="number" id="pOriginal" class="form-control" placeholder="Optional" min="1"></div>
+      </div>
+      <div class="form-group"><label class="form-label required">Quantity</label><input type="number" id="pQty" class="form-control" value="1" min="1" required></div>
+      <div class="form-group"><label class="form-label required">Description (max 200 chars)</label><textarea id="pDesc" class="form-control" rows="3" maxlength="200" placeholder="Describe the item..." required></textarea></div>
+      <div class="form-group"><label class="form-label required">Product Image URL</label><input type="url" id="pImage" class="form-control" placeholder="https://... (Unsplash or any image URL)" required></div>
+      <div class="form-group"><label class="form-label">Location on Campus</label><input type="text" id="pLocation" class="form-control" placeholder="North Campus, Hostel Block A..."></div>
+      <button type="submit" class="btn btn-primary btn-full" id="sellSubmitBtn"><i class="fas fa-check"></i> Submit for Approval</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+let allProducts = [], currentCat = 'all', cart = [], wishlist = [], currentProduct = null;
+let selectedPaymentMethod = null;
+let currentUser = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = Auth.getUser();
+  setupNav();
+  await loadAllProducts();
+  loadCart();
+  loadWishlist();
+  if (currentUser) loadNotifications();
+
+  // Check for category in URL
+  const params = new URLSearchParams(window.location.search);
+  const urlCat = params.get('cat');
+  if (urlCat) filterCat(urlCat, null);
+
+  if (window.innerWidth > 900) {
+    document.getElementById('desktopSidebar').style.display = 'block';
+  }
+});
+
+function setupNav() {
+  if (currentUser) {
+    document.getElementById('guestNav').style.display = 'none';
+    document.getElementById('wishlistBtn').style.display = 'flex';
+    document.getElementById('notifBtn').style.display = 'flex';
+    document.getElementById('cartBtn').style.display = 'flex';
+    document.getElementById('userAvatarBtn').style.display = 'flex';
+    document.getElementById('userAvatarImg').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff`;
+    document.getElementById('ddName').textContent = currentUser.name;
+    document.getElementById('ddRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    if (currentUser.role === 'seller') document.getElementById('dropSellLink').style.display = 'flex';
+  }
+
+  // User menu toggle
+  document.getElementById('userAvatarBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('userDropdown').classList.toggle('show');
+    document.getElementById('notifPanel').classList.remove('show');
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('userDropdown').classList.remove('show');
+    document.getElementById('notifPanel').classList.remove('show');
+  });
+}
+
+async function loadAllProducts() {
+  try {
+    allProducts = await API.get('/products');
+    applyFilters();
+  } catch(e) {
+    document.getElementById('productsGrid').innerHTML = '<div class="no-products"><i class="fas fa-exclamation-triangle" style="font-size:3rem;color:var(--accent-red);margin-bottom:16px;"></i><p>Could not load products. Is the server running?</p></div>';
+  }
+}
+
+function applyFilters() {
+  let filtered = [...allProducts];
+  if (currentCat !== 'all') filtered = filtered.filter(p => p.category === currentCat);
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (search) filtered = filtered.filter(p => p.title.toLowerCase().includes(search) || p.description.toLowerCase().includes(search));
+  const min = parseFloat(document.getElementById('minPrice')?.value || 0);
+  const max = parseFloat(document.getElementById('maxPrice')?.value || 999999);
+  if (min) filtered = filtered.filter(p => p.price >= min);
+  if (max < 999999) filtered = filtered.filter(p => p.price <= max);
+  const sort = document.getElementById('sortSelect').value;
+  if (sort === 'price-low') filtered.sort((a,b) => a.price - b.price);
+  else if (sort === 'price-high') filtered.sort((a,b) => b.price - a.price);
+  else if (sort === 'rating') filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
+  else filtered.sort((a,b) => b.id - a.id);
+  renderProducts(filtered);
+  document.getElementById('resultInfo').textContent = `${filtered.length} product${filtered.length !== 1 ? 's' : ''} found`;
+}
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-chip, #catList li').forEach(e => e.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll(`[data-cat="${cat}"]`).forEach(e => e.classList.add('active'));
+    document.querySelectorAll('.cat-chip').forEach(e => { if (e.textContent.toLowerCase().includes(cat) || (cat==='all' && e.textContent.includes('All'))) e.classList.add('active'); });
+  }
+  applyFilters();
+}
+
+function handleSearch(val) {
+  applyFilters();
+  const sugg = document.getElementById('searchSuggestions');
+  if (!val.trim()) { sugg.classList.remove('show'); return; }
+  const matches = allProducts.filter(p => p.title.toLowerCase().includes(val.toLowerCase())).slice(0, 6);
+  if (!matches.length) { sugg.classList.remove('show'); return; }
+  sugg.innerHTML = matches.map(p => `<div class="search-suggestion-item" onclick="openProductDetail(${p.id})"><strong>${p.title.substring(0,40)}</strong> — ₹${p.price.toLocaleString()}</div>`).join('');
+  sugg.classList.add('show');
+  document.addEventListener('click', () => sugg.classList.remove('show'), { once: true });
+}
+
+function renderProducts(list) {
+  if (!list.length) {
+    document.getElementById('productsGrid').innerHTML = `<div class="no-products" style="grid-column:1/-1;"><i class="fas fa-box-open" style="font-size:3.5rem;color:var(--text-muted);margin-bottom:16px;opacity:0.4;"></i><h3 style="margin-bottom:8px;">No products found</h3><p style="color:var(--text-muted);">Try a different category or search term</p></div>`;
+    return;
+  }
+  document.getElementById('productsGrid').innerHTML = list.map(renderProductCard).join('');
+  if (window.refreshCursorTargets) refreshCursorTargets();
+  // Re-init 3D tilt
+  if (window.initCardTilt) initCardTilt();
+}
+
+function renderProductCard(p) {
+  const disc = p.original_price ? Math.round((1 - p.price/p.original_price)*100) : 0;
+  const inWl = wishlist.some(w => w.id === p.id);
+  return `
+    <div class="product-card card-3d" onclick="openProductDetail(${p.id})" style="position:relative;">
+      <div style="overflow:hidden;position:relative;">
+        <img src="${p.image_url}" alt="${p.title}" class="product-card-img">
+        ${disc>0 ? `<span style="position:absolute;top:10px;left:10px;background:var(--accent-red);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">${disc}% OFF</span>` : ''}
+        ${p.eco ? `<span style="position:absolute;top:10px;right:10px;background:rgba(16,185,129,0.9);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">🌿 Eco</span>` : ''}
+      </div>
+      <div class="product-card-body">
+        <div class="product-card-title">${p.title}</div>
+        <div style="display:flex;align-items:center;gradient:var(--accent-primary);margin:6px 0;">
+          <span class="product-card-price">₹${p.price.toLocaleString()}</span>
+          ${p.original_price ? `<span class="product-card-original">₹${p.original_price.toLocaleString()}</span>` : ''}
+        </div>
+        <div class="product-card-meta">
+          <span class="badge badge-condition">${p.condition}</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);"><i class="fas fa-map-marker-alt" style="color:var(--accent-red);"></i> ${p.location || 'Campus'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;margin-top:8px;">
+          <i class="fas fa-star" style="color:#f59e0b;font-size:0.75rem;"></i>
+          <span style="font-size:0.8rem;font-weight:700;">${(p.rating||4.5).toFixed(1)}</span>
+        </div>
+      </div>
+      <div class="product-card-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="addToCartQuick(event,${p.id})"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+        <button class="wishlist-btn ${inWl ? 'active' : ''}" onclick="toggleWishlist(event,${p.id})" title="Wishlist">
+          <i class="${inWl ? 'fas' : 'far'} fa-heart wi-icon"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+async function openProductDetail(id) {
+  currentProduct = allProducts.find(p => p.id === id);
+  if (!currentProduct) return;
+  const p = currentProduct;
+  const disc = p.original_price ? Math.round((1 - p.price/p.original_price)*100) : 0;
+  const inWl = wishlist.some(w => w.id === p.id);
+  document.getElementById('productModalContent').innerHTML = `
+    <button class="modal-close" onclick="closeModal('productModal')"><i class="fas fa-times"></i></button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px; margin-top:8px;">
+      <div>
+        <div class="product-detail-img-wrap"><img src="${p.image_url}" alt="${p.title}"></div>
+        ${p.eco ? `<div style="margin-top:8px;"><span class="badge badge-eco">🌿 Eco-Friendly Item</span></div>` : ''}
+      </div>
+      <div>
+        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:14px;line-height:1.3;">${p.title}</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+          <span style="font-size:2rem;font-weight:900;color:var(--accent-primary);">₹${p.price.toLocaleString()}</span>
+          ${p.original_price ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:1rem;">₹${p.original_price.toLocaleString()}</span><span style="background:var(--accent-red);color:white;padding:3px 10px;border-radius:8px;font-size:0.8rem;font-weight:800;">${disc}% OFF</span>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;font-size:0.9rem;">
+          <div><span style="color:var(--text-muted);font-weight:600;">Category:</span> <strong>${p.category.charAt(0).toUpperCase()+p.category.slice(1)}</strong></div>
+          <div><span style="color:var(--text-muted);font-weight:600;">Condition:</span> <span class="badge badge-condition">${p.condition}</span></div>
+          <div><span style="color:var(--text-muted);font-weight:600;">Location:</span> <strong>${p.location || 'Campus'}</strong></div>
+          <div><span style="color:var(--text-muted);font-weight:600;">In Stock:</span> <strong>${p.quantity || 1}</strong></div>
+          <div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-star" style="color:#f59e0b;"></i><strong>${(p.rating||4.5).toFixed(1)}</strong><span style="color:var(--text-muted);font-size:0.82rem;">(${Math.floor(Math.random()*50)+10} reviews)</span></div>
+        </div>
+        <div style="padding:14px;background:var(--bg-primary);border-radius:12px;margin-bottom:16px;">
+          <div style="font-weight:700;margin-bottom:6px;">Seller</div>
+          <div style="font-size:0.88rem;color:var(--text-secondary);">
+            ${currentUser ? `${p.seller_name} · <i class="fas fa-check-circle" style="color:#3b82f6;"></i> Verified` : 'Verified Seller · <span style="color:var(--text-muted)">Contact admin for details</span>'}
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <div style="font-weight:700;margin-bottom:6px;">Description</div>
+          <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6;">${p.description}</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="addToCartQuick(event,${p.id});closeModal('productModal');"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+          <button class="btn btn-gold" style="flex:1;" onclick="buyNow(${p.id})"><i class="fas fa-bolt"></i> Buy Now</button>
+          <button class="wishlist-btn ${inWl?'active':''}" onclick="toggleWishlist(event,${p.id})" style="width:44px;height:44px;border-radius:12px;flex-shrink:0;">
+            <i class="${inWl?'fas':'far'} fa-heart wi-icon"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  openModal('productModal');
+}
+
+// ─── Cart ────────────────────────────────────────────────────
+function loadCart() { cart = JSON.parse(localStorage.getItem('vm_cart') || '[]'); updateCartBadge(); }
+function saveCart() { localStorage.setItem('vm_cart', JSON.stringify(cart)); updateCartBadge(); }
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = cart.length;
+  badge.style.display = cart.length ? 'flex' : 'none';
+}
+
+function addToCartQuick(e, id) {
+  if (e) e.stopPropagation();
+  if (!currentUser) { showToast('Please login to add to cart', 'error'); window.location.href = 'login.html'; return; }
+  if (currentUser.role === 'seller') { showToast('Sellers cannot buy. Use a buyer account.', 'error'); return; }
+  const product = allProducts.find(p => p.id === id);
+  if (!product) return;
+  if (cart.find(c => c.id === id)) { showToast('Already in cart!', 'info'); return; }
+  cart.push(product); saveCart();
+  showToast(`${product.title.substring(0,25)}... added! 🛒`, 'success');
+}
+
+function buyNow(id) {
+  addToCartQuick(null, id);
+  closeModal('productModal');
+  openCart();
+}
+
+function openCart() {
+  if (!currentUser) { showToast('Login to view cart', 'error'); return; }
+  renderCartDrawer();
+  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('cartOverlay').classList.add('show');
+}
+
+function closeCart() {
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartOverlay').classList.remove('show');
+}
+
+function renderCartDrawer() {
+  if (!cart.length) {
+    document.getElementById('cartBody').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><i class="fas fa-shopping-cart" style="font-size:3rem;opacity:0.3;margin-bottom:16px;"></i><p>Your cart is empty</p><a href="shop.html" class="btn btn-primary btn-sm" style="margin-top:16px;">Browse Products</a></div>';
+    document.getElementById('cartTotal').textContent = '₹0';
+    return;
+  }
+  document.getElementById('cartBody').innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <img src="${item.image_url}" alt="${item.title}">
+      <div class="cart-item-info">
+        <div class="cart-item-title">${item.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);">${item.condition}</div>
+        <div class="cart-item-price">₹${item.price.toLocaleString()}</div>
+      </div>
+      <button onclick="removeFromCart(${item.id})" style="background:none;border:none;cursor:pointer;color:var(--accent-red);padding:4px;font-size:1rem;"><i class="fas fa-trash"></i></button>
+    </div>`).join('');
+  const total = cart.reduce((s,i) => s + i.price, 0);
+  document.getElementById('cartTotal').textContent = `₹${total.toLocaleString()}`;
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(c => c.id !== id); saveCart(); renderCartDrawer();
+  showToast('Removed from cart', 'info');
+}
+
+function proceedCheckout() {
+  if (!cart.length) return;
+  if (!currentUser) { showToast('Please login first', 'error'); window.location.href = 'login.html'; return; }
+  if (currentUser.role === 'seller') { showToast('Sellers cannot checkout', 'error'); return; }
+  closeCart();
+  const total = cart.reduce((s,i) => s + i.price, 0);
+  document.getElementById('paymentSummary').innerHTML = `<div style="font-weight:700;margin-bottom:8px;">${cart.length} item(s)</div><div style="font-size:1.2rem;font-weight:800;color:var(--accent-primary);">Total: ₹${total.toLocaleString()}</div>`;
+  selectedPaymentMethod = null;
+  document.getElementById('confirmPayBtn').disabled = true;
+  document.getElementById('upiQR').style.display = 'none';
+  document.getElementById('codBtn').classList.remove('btn-primary');
+  document.getElementById('upiBtn').classList.remove('btn-primary');
+  openModal('paymentModal');
+}
+
+function selectPayment(method) {
+  selectedPaymentMethod = method;
+  document.getElementById('codBtn').classList.toggle('btn-primary', method==='COD');
+  document.getElementById('upiBtn').classList.toggle('btn-primary', method==='UPI');
+  document.getElementById('upiQR').style.display = method==='UPI' ? 'block' : 'none';
+  document.getElementById('confirmPayBtn').disabled = false;
+}
+
+async function confirmOrder() {
+  if (!selectedPaymentMethod) return;
+  const btn = document.getElementById('confirmPayBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Placing...';
+  try {
+    await API.post('/orders', { items: cart.map(p => ({ id: p.id })), paymentMethod: selectedPaymentMethod });
+    cart = []; saveCart();
+    closeModal('paymentModal');
+    showToast('🎉 Order placed! Waiting for seller confirmation.', 'success');
+    // Show success animation
+    document.getElementById('productsGrid').scrollIntoView({ behavior:'smooth' });
+  } catch (err) {
+    showToast(err.message, 'error');
+    btn.disabled = false; btn.innerHTML = 'Confirm Order';
+  }
+}
+
+// ─── Wishlist ────────────────────────────────────────────────
+function loadWishlist() { wishlist = JSON.parse(localStorage.getItem('vm_wishlist') || '[]'); updateWishlistBadge(); }
+function saveWishlist() { localStorage.setItem('vm_wishlist', JSON.stringify(wishlist)); updateWishlistBadge(); }
+function updateWishlistBadge() {
+  const badge = document.getElementById('wishlistBadge');
+  badge.textContent = wishlist.length;
+  badge.style.display = wishlist.length ? 'flex' : 'none';
+}
+
+function toggleWishlist(e, id) {
+  e.stopPropagation();
+  if (!currentUser) { showToast('Login to save to wishlist', 'error'); return; }
+  const product = allProducts.find(p => p.id === id);
+  const idx = wishlist.findIndex(w => w.id === id);
+  if (idx > -1) { wishlist.splice(idx,1); showToast('Removed from wishlist', 'info'); }
+  else { wishlist.push(product); showToast('Saved to wishlist! ❤️', 'success'); }
+  saveWishlist(); renderProducts(allProducts.filter(p => currentCat==='all' || p.category===currentCat));
+}
+
+function openWishlistModal() {
+  if (!wishlist.length) {
+    document.getElementById('wishlistBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-heart" style="font-size:3rem;opacity:0.3;margin-bottom:12px;"></i><p>No wishlisted items yet</p></div>';
+  } else {
+    document.getElementById('wishlistBody').innerHTML = wishlist.map(item => `
+      <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-color);align-items:center;">
+        <img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;" onclick="closeModal('wishlistModal');openProductDetail(${item.id});" style="cursor:pointer;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:0.9rem;cursor:pointer;" onclick="closeModal('wishlistModal');openProductDetail(${item.id});">${item.title}</div>
+          <div style="color:var(--accent-primary);font-weight:800;margin-top:2px;">₹${item.price.toLocaleString()}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="addToCartQuick(null,${item.id})"><i class="fas fa-cart-plus"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleWishlist(event,${item.id});openWishlistModal();" style="color:var(--accent-red);"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`).join('');
+  }
+  openModal('wishlistModal');
+}
+
+// ─── Notifications ────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const notifs = await API.get('/notifications');
+    renderNotifications(notifs);
+    const unread = notifs.filter(n => !n.is_read).length;
+    const badge = document.getElementById('notifBadge');
+    badge.textContent = unread;
+    badge.style.display = unread ? 'flex' : 'none';
+  } catch {}
+}
+
+function renderNotifications(notifs) {
+  if (!notifs.length) {
+    document.getElementById('notifList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:0.88rem;">No notifications</div>';
+    return;
+  }
+  document.getElementById('notifList').innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.is_read ? '' : 'unread'}">
+      <div class="notif-title">${n.title}</div>
+      <div class="notif-msg">${n.message}</div>
+      <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('notifPanel').classList.toggle('show');
+  document.getElementById('userDropdown').classList.remove('show');
+}
+
+async function markAllRead(e) {
+  e.stopPropagation();
+  try {
+    await API.put('/notifications/read', {});
+    document.getElementById('notifBadge').style.display = 'none';
+    await loadNotifications();
+  } catch {}
+}
+
+// ─── Sell Modal ───────────────────────────────────────────────
+function openSellModal() {
+  if (!currentUser || currentUser.role !== 'seller') { showToast('Only sellers can list products', 'error'); return; }
+  openModal('sellModal');
+}
+
+async function submitProduct(e) {
+  e.preventDefault();
+  const btn = document.getElementById('sellSubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+  try {
+    await API.post('/products', {
+      title: document.getElementById('pTitle').value,
+      category: document.getElementById('pCategory').value,
+      condition: document.getElementById('pCondition').value,
+      price: parseFloat(document.getElementById('pPrice').value),
+      originalPrice: document.getElementById('pOriginal').value || null,
+      quantity: parseInt(document.getElementById('pQty').value),
+      description: document.getElementById('pDesc').value,
+      imageUrl: document.getElementById('pImage').value,
+      location: document.getElementById('pLocation').value
+    });
+    showToast('Product submitted for admin approval! 🎉', 'success');
+    closeModal('sellModal');
+    document.getElementById('sellForm').reset();
+  } catch(err) {
+    showToast(err.message, 'error');
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Submit for Approval';
+}
+
+function goDashboard() {
+  if (!currentUser) return;
+  if (currentUser.role === 'buyer') window.location.href = 'buyer.html';
+  else if (currentUser.role === 'seller') window.location.href = 'seller.html';
+  else if (currentUser.role === 'admin') window.location.href = 'admin.html';
+}
+</script>
+</body>
+</html>
