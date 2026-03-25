@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VIIT Mart — Campus Marketplace</title>
-  <meta name="description" content="Buy and sell within VIIT campus. Verified students, secure transactions, admin-moderated marketplace.">
+  <title>VIIT Mart — Campus Marketplace | Buy & Sell Among VIIT Students</title>
+  <meta name="description"
+    content="Buy and sell within VIIT campus. Verified students, secure transactions, admin-moderated marketplace. Electronics, books, fashion, services and more.">
+  <meta property="og:title" content="VIIT Mart — Campus Marketplace">
+  <meta property="og:description" content="Buy and sell within VIIT campus. Verified students, secure transactions.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="canonical" href="/">
   <link rel="stylesheet" href="shared/css/main.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebSite","name":"VIIT Mart","url":"http://localhost:3000","description":"Campus marketplace for VIIT students","potentialAction":{"@type":"SearchAction","target":"/shop?search={search_term_string}","query-input":"required name=search_term_string"}}
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* ─── Hero Section ──────────────────────────────────── */
@@ -18,18 +28,53 @@
       overflow: hidden;
       padding-top: 70px;
     }
-    .hero-bg-orbs .orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
-    .orb-a { width: 600px; height: 600px; background: rgba(99,102,241,0.25); top: -150px; right: -100px; animation: float-slow 10s ease-in-out infinite; }
-    .orb-b { width: 500px; height: 500px; background: rgba(139,92,246,0.2); bottom: -100px; left: -80px; animation: float-slow 13s ease-in-out infinite reverse; }
-    .orb-c { width: 300px; height: 300px; background: rgba(245,158,11,0.15); top: 50%; left: 40%; animation: float-slow 8s ease-in-out infinite; }
 
-    .hero-content { position: relative; z-index: 1; padding: 80px 0 100px; }
+    .hero-bg-orbs .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    .orb-a {
+      width: 600px;
+      height: 600px;
+      background: rgba(99, 102, 241, 0.25);
+      top: -150px;
+      right: -100px;
+      animation: float-slow 10s ease-in-out infinite;
+    }
+
+    .orb-b {
+      width: 500px;
+      height: 500px;
+      background: rgba(139, 92, 246, 0.2);
+      bottom: -100px;
+      left: -80px;
+      animation: float-slow 13s ease-in-out infinite reverse;
+    }
+
+    .orb-c {
+      width: 300px;
+      height: 300px;
+      background: rgba(245, 158, 11, 0.15);
+      top: 50%;
+      left: 40%;
+      animation: float-slow 8s ease-in-out infinite;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 80px 0 100px;
+    }
+
     .hero-eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(99,102,241,0.15);
-      border: 1px solid rgba(99,102,241,0.3);
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
       border-radius: 30px;
       padding: 7px 18px;
       font-size: 0.82rem;
@@ -58,13 +103,18 @@
 
     .hero-subtitle {
       font-size: 1.15rem;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255, 255, 255, 0.7);
       line-height: 1.7;
       margin-bottom: 40px;
       max-width: 520px;
     }
 
-    .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 56px; }
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
 
     /* Stats Row */
     .hero-stats {
@@ -72,37 +122,60 @@
       gap: 32px;
       flex-wrap: wrap;
     }
-    .hero-stat { text-align: center; }
-    .hero-stat-val { font-size: 2rem; font-weight: 800; color: white; }
-    .hero-stat-label { font-size: 0.78rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
 
-    /* Hero Right — 3D float */
-    .hero-visual {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 450px;
+    .hero-stat {
+      text-align: center;
     }
 
-    .hero-phone-mockup {
-      width: 260px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 32px;
-      padding: 16px;
-      backdrop-filter: blur(20px);
-      animation: float 7s ease-in-out infinite;
-      position: relative;
-      z-index: 2;
-      box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+    .hero-stat-val {
+      font-size: 2rem;
+      font-weight: 800;
+      color: white;
+    }
+
+    .hero-stat-label {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Hero Right — 3D Particle Cart */
+    .hero-visual {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .cart-canvas-wrap {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      pointer-events: auto;
+    }
+
+    .cart-canvas-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: transparent;
+      user-select: none;
+      outline: none;
     }
 
     .floating-card {
       position: absolute;
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 18px;
       padding: 14px 18px;
       color: white;
@@ -111,23 +184,77 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       z-index: 3;
     }
 
-    .fc-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-    .fc-1 { top: 8%; left: -10%; animation: float 5s ease-in-out infinite; }
-    .fc-2 { bottom: 20%; right: -10%; animation: float 7s ease-in-out infinite; animation-delay: -2s; }
-    .fc-3 { top: 55%; left: -15%; animation: float 6s ease-in-out infinite; animation-delay: -4s; }
+    .fc-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .fc-1 {
+      top: 8%;
+      left: -10%;
+      animation: float 5s ease-in-out infinite;
+    }
+
+    .fc-2 {
+      bottom: 20%;
+      right: -10%;
+      animation: float 7s ease-in-out infinite;
+      animation-delay: -2s;
+    }
+
+    .fc-3 {
+      top: 55%;
+      left: -15%;
+      animation: float 6s ease-in-out infinite;
+      animation-delay: -4s;
+    }
 
     /* Product mini cards inside phone */
-    .mini-product { background: rgba(255,255,255,0.06); border-radius: 12px; padding: 10px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; }
-    .mini-product img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; }
-    .mini-title { font-size: 0.72rem; color: rgba(255,255,255,0.9); font-weight: 600; }
-    .mini-price { font-size: 0.8rem; color: #a5b4fc; font-weight: 800; }
+    .mini-product {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mini-product img {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .mini-title {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+    }
+
+    .mini-price {
+      font-size: 0.8rem;
+      color: #a5b4fc;
+      font-weight: 800;
+    }
 
     /* ─── Features ───────────────────────────────────────── */
-    .features-section { background: var(--bg-secondary); padding: 100px 0; }
+    .features-section {
+      background: var(--bg-secondary);
+      padding: 100px 0;
+    }
+
     .feature-card {
       background: var(--bg-card);
       border: 1.5px solid var(--border-color);
@@ -137,17 +264,41 @@
       transition: all 0.35s ease;
       cursor: default;
     }
+
     .feature-card:hover {
       transform: translateY(-8px);
       border-color: var(--accent-primary);
-      box-shadow: 0 20px 50px rgba(99,102,241,0.12);
+      box-shadow: 0 20px 50px rgba(99, 102, 241, 0.12);
     }
-    .feature-icon { width: 72px; height: 72px; border-radius: 22px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
-    .feature-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
-    .feature-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+
+    .feature-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+
+    .feature-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
 
     /* ─── How It Works ───────────────────────────────────── */
-    .hiw-section { padding: 100px 0; }
+    .hiw-section {
+      padding: 100px 0;
+    }
+
     .hiw-step {
       background: var(--bg-card);
       border: 1.5px solid var(--border-color);
@@ -156,23 +307,60 @@
       position: relative;
       transition: all 0.35s ease;
     }
-    .hiw-step:hover { transform: translateY(-6px); border-color: var(--accent-primary); box-shadow: 0 20px 40px rgba(99,102,241,0.12); }
+
+    .hiw-step:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-primary);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.12);
+    }
+
     .hiw-number {
       font-size: 4rem;
       font-weight: 900;
-      color: rgba(99,102,241,0.1);
+      color: rgba(99, 102, 241, 0.1);
       position: absolute;
       top: 16px;
       right: 20px;
       line-height: 1;
     }
-    .hiw-icon { width: 56px; height: 56px; border-radius: 16px; background: var(--gradient-accent); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; margin-bottom: 20px; }
-    .hiw-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; }
-    .hiw-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+
+    .hiw-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--gradient-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    .hiw-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+
+    .hiw-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
 
     /* ─── Categories Showcase ────────────────────────────── */
-    .cats-section { padding: 80px 0; background: var(--bg-secondary); }
-    .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .cats-section {
+      padding: 80px 0;
+      background: var(--bg-secondary);
+    }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
     .cat-cell {
       background: var(--bg-card);
       border: 1.5px solid var(--border-color);
@@ -184,10 +372,29 @@
       text-decoration: none;
       color: var(--text-primary);
     }
-    .cat-cell:hover { transform: translateY(-6px) scale(1.02); border-color: var(--accent-primary); box-shadow: 0 16px 40px rgba(99,102,241,0.15); }
-    .cat-cell .cat-emoji { font-size: 2.2rem; display: block; margin-bottom: 10px; }
-    .cat-cell .cat-name { font-weight: 700; font-size: 0.92rem; }
-    .cat-cell .cat-count { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    .cat-cell:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: var(--accent-primary);
+      box-shadow: 0 16px 40px rgba(99, 102, 241, 0.15);
+    }
+
+    .cat-cell .cat-emoji {
+      font-size: 2.2rem;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .cat-cell .cat-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .cat-cell .cat-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
 
     /* ─── CTA Banner ─────────────────────────────────────── */
     .cta-section {
@@ -197,362 +404,575 @@
       overflow: hidden;
       text-align: center;
     }
-    .cta-title { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 800; color: white; letter-spacing: -1px; }
-    .cta-sub { font-size: 1.1rem; color: rgba(255,255,255,0.65); margin: 16px 0 40px; }
-    .cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    .cta-title {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 800;
+      color: white;
+      letter-spacing: -1px;
+    }
+
+    .cta-sub {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.65);
+      margin: 16px 0 40px;
+    }
+
+    .cta-btns {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+
+    @keyframes float-slow {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(-6px); }
+    }
+
+    @media (max-width: 900px) {
+      .cart-canvas-wrap { height: 340px; max-width: 100%; }
+      .hero-visual { min-height: 340px; }
+    }
+    @media (max-width: 600px) {
+      .cart-canvas-wrap { height: 280px; }
+      .hero-visual { min-height: 280px; }
+    }
   </style>
 </head>
+
 <body>
+<canvas id="particleCanvas"></canvas>
 
-<!-- ─── Page Loader ─────────────────────────────────────── -->
-<div class="page-loader" id="pageLoader">
-  <div class="loader-logo">🎓 VIIT Mart</div>
-  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
-  <p style="color:rgba(255,255,255,0.4); margin-top:12px; font-size:0.85rem;">Powering up your campus marketplace...</p>
-</div>
+  <!-- ─── Page Loader ─────────────────────────────────────── -->
+  <div class="page-loader" id="pageLoader">
+    <div class="loader-logo">🎓 VIIT <span style="color:var(--accent-primary)">Mart</span></div>
+    <div class="loader-bar">
+      <div class="loader-bar-fill"></div>
+    </div>
+    <p style="color:rgba(255,255,255,0.4); margin-top:12px; font-size:0.85rem;">Powering up your campus marketplace...
+    </p>
+  </div>
 
-<!-- ─── Navigation ───────────────────────────────────────── -->
-<nav class="navbar" id="mainNav">
-  <div class="navbar-inner container">
-    <a href="index.html" class="nav-logo">
-      <div class="logo-icon">🎓</div>
-      VIIT Mart
-    </a>
-    <div style="flex:1"></div>
-    <div class="nav-actions" id="navActions">
-      <button class="dark-toggle" id="darkModeToggle" title="Toggle Dark Mode"></button>
-      <div id="guestNav" class="nav-actions" style="gap:8px;">
-        <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
-        <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
-        <a href="admin.html" class="btn btn-sm" style="background:rgba(99,102,241,0.12);color:var(--accent-primary);border:1.5px solid rgba(99,102,241,0.3)">👑 Admin</a>
-      </div>
-      <div id="userNav" class="nav-actions" style="gap:8px; display:none;">
-        <a href="shop.html" class="btn btn-primary btn-sm"><i class="fas fa-store"></i> Shop</a>
-        <div class="user-menu-trigger" id="userMenuTrigger">
-          <img id="userAvatarImg" src="" alt="Avatar">
-          <div class="user-menu-info">
-            <div class="uname" id="userDisplayName">User</div>
-            <div class="urole" id="userDisplayRole">student</div>
-          </div>
-          <i class="fas fa-chevron-down" style="font-size:0.7rem; color:var(--text-muted);"></i>
+  <!-- ─── Navigation ───────────────────────────────────────── -->
+  <nav class="navbar" id="mainNav">
+    <div class="navbar-inner container">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🎓</div>
+        VIIT Mart
+      </a>
+      <div style="flex:1"></div>
+      <div class="nav-actions" id="navActions">
+        <button class="dark-toggle" id="darkModeToggle" title="Toggle Dark Mode"></button>
+        <div id="guestNav" class="nav-actions" style="gap:8px;">
+          <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
+          <a href="admin.html" class="btn btn-sm"
+            style="background:rgba(99,102,241,0.12);color:var(--accent-primary);border:1.5px solid rgba(99,102,241,0.3)">👑
+            Admin</a>
         </div>
-        <div class="dropdown-panel" id="userDropdown">
-          <div class="dropdown-header">
-            <div style="font-weight:700;" id="ddName">User</div>
-            <div style="font-size:0.8rem;color:var(--text-muted);" id="ddRole">Student</div>
+        <div id="userNav" class="nav-actions" style="gap:8px; display:none;">
+          <a href="shop.html" class="btn btn-primary btn-sm"><i class="fas fa-store"></i> Shop</a>
+          <div class="user-menu-trigger" id="userMenuTrigger">
+            <img id="userAvatarImg" src="" alt="Avatar">
+            <div class="user-menu-info">
+              <div class="uname" id="userDisplayName">User</div>
+              <div class="urole" id="userDisplayRole">student</div>
+            </div>
+            <i class="fas fa-chevron-down" style="font-size:0.7rem; color:var(--text-muted);"></i>
           </div>
-          <a href="shop.html" class="dropdown-item"><div class="di-icon" style="background:rgba(99,102,241,0.1);">🛍️</div>Browse Shop</a>
-          <div class="dropdown-item" onclick="goDashboard()"><div class="di-icon" style="background:rgba(16,185,129,0.1);">📊</div>Dashboard</div>
-          <div class="dropdown-item" onclick="Auth.logout()"><div class="di-icon" style="background:rgba(239,68,68,0.08);">🚪</div><span style="color:var(--accent-red)">Logout</span></div>
+          <div class="dropdown-panel" id="userDropdown">
+            <div class="dropdown-header">
+              <div style="font-weight:700;" id="ddName">User</div>
+              <div style="font-size:0.8rem;color:var(--text-muted);" id="ddRole">Student</div>
+            </div>
+            <a href="shop.html" class="dropdown-item">
+              <div class="di-icon" style="background:rgba(99,102,241,0.1);">🛍️</div>Browse Shop
+            </a>
+            <div class="dropdown-item" onclick="goDashboard()">
+              <div class="di-icon" style="background:rgba(16,185,129,0.1);">📊</div>Dashboard
+            </div>
+            <div class="dropdown-item" onclick="Auth.logout()">
+              <div class="di-icon" style="background:rgba(239,68,68,0.08);">🚪</div><span
+                style="color:var(--accent-red)">Logout</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<!-- ─── Hero Section ─────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-bg-orbs">
-    <div class="orb orb-a"></div>
-    <div class="orb orb-b"></div>
-    <div class="orb orb-c"></div>
-  </div>
-  <div class="container">
-    <div class="hero-content" style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
-      <div>
-        <div class="hero-eyebrow" data-reveal>
-          <span style="width:8px;height:8px;background:#a5b4fc;border-radius:50%;"></span>
-          Campus-Exclusive Marketplace
-        </div>
-        <h1 class="hero-title" data-reveal>
-          Buy & Sell Within<br>Your <span class="highlight">Campus</span> 🎓
-        </h1>
-        <p class="hero-subtitle" data-reveal>
-          Your trusted student marketplace for books, electronics, services and more — all from verified VIIT students.
-        </p>
-        <div class="hero-cta" data-reveal>
-          <a href="shop.html" class="btn btn-primary btn-lg">
-            <i class="fas fa-store"></i> Browse Products
-          </a>
-          <a href="register.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.25);">
-            Start Selling →
-          </a>
-        </div>
-        <div class="hero-stats" data-reveal>
-          <div class="hero-stat">
-            <div class="hero-stat-val" data-count="500">0</div>
-            <div class="hero-stat-label">Students</div>
+  <!-- ─── Hero Section ─────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-bg-orbs">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="orb orb-c"></div>
+    </div>
+
+    <!-- Hero Visual — 3D Particle Cart -->
+    <div class="hero-visual" data-reveal>
+      <div class="cart-canvas-wrap" id="cartWrap">
+        <iframe
+          id="cartFrame"
+          src="CART.html"
+          title="3D Particle Shopping Cart"
+          scrolling="no"
+          allow="accelerometer; autoplay"
+        ></iframe>
+      </div>
+    </div>
+
+    <div class="container" style="position: relative; z-index: 2; pointer-events: none;">
+      <div class="hero-content" style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center; min-height:80vh;">
+        <div style="pointer-events: auto;">
+          <div class="hero-eyebrow" data-reveal>
+            <span style="width:8px;height:8px;background:#a5b4fc;border-radius:50%;"></span>
+            Campus-Exclusive Marketplace
           </div>
-          <div class="hero-stat" style="border-left:1px solid rgba(255,255,255,0.1);padding-left:32px;">
-            <div class="hero-stat-val" data-count="200">0</div>
-            <div class="hero-stat-label">Products</div>
+          <h1 class="hero-title" data-reveal>
+            Buy & Sell Within<br>Your <span class="highlight">Campus</span> 🎓
+          </h1>
+          <p class="hero-subtitle" data-reveal>
+            Your trusted student marketplace for books, electronics, services and more — all from verified VIIT
+            students.
+          </p>
+          <div class="hero-cta" data-reveal>
+            <a href="shop.html" class="btn btn-primary btn-lg">
+              <i class="fas fa-store"></i> Browse Products
+            </a>
+            <a href="register.html" class="btn btn-lg"
+              style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.25);">
+              Start Selling →
+            </a>
           </div>
-          <div class="hero-stat" style="border-left:1px solid rgba(255,255,255,0.1);padding-left:32px;">
-            <div class="hero-stat-val" data-count="95">0</div>
-            <div class="hero-stat-label">% Safe</div>
-          </div>
+
         </div>
       </div>
+    </div>
+  </section>
 
-      <!-- Hero Visual -->
-      <div class="hero-visual" data-reveal="right">
-        <!-- Floating cards -->
-        <div class="floating-card fc-1">
-          <div class="fc-icon" style="background:rgba(16,185,129,0.2);font-size:1.3rem;">✅</div>
+  <!-- ─── Features ────────────────────────────────────────── -->
+  <section class="features-section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:60px;">
+        <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;"
+          data-reveal>Why VIIT Mart?</p>
+        <h2 class="section-title" data-reveal>Built for <span class="gradient-text">Students</span>, by Students</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;">
+        <div class="feature-card card-3d" data-reveal style="--card-shine:''">
+          <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
+          <div class="feature-icon" style="background:rgba(99,102,241,0.1);"><i class="fas fa-cart-shopping" style="color:var(--accent-primary);font-size:1.4rem;"></i></div>
+          <div class="feature-title">Easy Buying</div>
+          <div class="feature-desc">Browse, cart, and checkout with Cash or UPI in seconds. Admin-verified sellers
+            guarantee safety.</div>
+        </div>
+        <div class="feature-card card-3d" data-reveal class="delay-1">
+          <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
+          <div class="feature-icon" style="background:rgba(16,185,129,0.1);"><i class="fas fa-store" style="color:var(--accent-green);font-size:1.4rem;"></i></div>
+          <div class="feature-title">Simple Selling</div>
+          <div class="feature-desc">List your products in minutes. Admin approves, buyers discover, and you earn
+            effortlessly.</div>
+        </div>
+        <div class="feature-card card-3d" data-reveal class="delay-2">
+          <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
+          <div class="feature-icon" style="background:rgba(245,158,11,0.1);"><i class="fas fa-box-open" style="color:var(--accent-gold);font-size:1.4rem;"></i></div>
+          <div class="feature-title">Campus Pickup</div>
+          <div class="feature-desc">No shipping needed. Collect your products on campus through the admin middleman
+            system.</div>
+        </div>
+        <div class="feature-card card-3d" data-reveal class="delay-3">
+          <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
+          <div class="feature-icon" style="background:rgba(139,92,246,0.1);"><i class="fas fa-shield-halved" style="color:#8b5cf6;font-size:1.4rem;"></i></div>
+          <div class="feature-title">100% Secure</div>
+          <div class="feature-desc">Admin-moderated transactions. All users verified with roll numbers. Zero tolerance
+            for fraud.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── How It Works ─────────────────────────────────────── -->
+  <section class="hiw-section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:60px;">
+        <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;"
+          data-reveal>Simple Process</p>
+        <h2 class="section-title" data-reveal>How It <span class="gradient-text">Works</span></h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+        <div class="hiw-step card-3d" data-reveal>
+          <div class="hiw-number">01</div>
+          <div class="hiw-icon">📝</div>
+          <div class="hiw-title">Register</div>
+          <div class="hiw-desc">Sign up as a Buyer or Seller with your college roll number and phone.</div>
+        </div>
+        <div class="hiw-step card-3d" data-reveal class="delay-1">
+          <div class="hiw-number">02</div>
+          <div class="hiw-icon">🔍</div>
+          <div class="hiw-title">Browse & List</div>
+          <div class="hiw-desc">Buyers browse listings. Sellers list products which get admin-reviewed.</div>
+        </div>
+        <div class="hiw-step card-3d" data-reveal class="delay-2">
+          <div class="hiw-number">03</div>
+          <div class="hiw-icon">🛒</div>
+          <div class="hiw-title">Order & Pay</div>
+          <div class="hiw-desc">Add to cart, choose Cash on Delivery or UPI, and confirm your order.</div>
+        </div>
+        <div class="hiw-step card-3d" data-reveal class="delay-3">
+          <div class="hiw-number">04</div>
+          <div class="hiw-icon">🎉</div>
+          <div class="hiw-title">Collect</div>
+          <div class="hiw-desc">Seller delivers to admin, who notifies you to collect on campus. Done!</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Categories ───────────────────────────────────────── -->
+  <section class="cats-section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:50px;">
+        <h2 class="section-title" data-reveal>Shop by <span class="gradient-text">Category</span></h2>
+        <p class="section-subtitle" data-reveal>Everything your campus life needs, all in one place</p>
+      </div>
+      <div class="cat-grid">
+        <a href="shop.html?cat=electronics" class="cat-cell card-3d" data-reveal>
+          <span style="font-size:2.8rem; margin-bottom:12px; display:inline-block;"><i class="fas fa-laptop" style="color:#3b82f6;"></i></span>
+          <div class="cat-name">Electronics</div>
+          <div class="cat-count">Laptops, Phones & more</div>
+        </a>
+        <a href="shop.html?cat=books" class="cat-cell card-3d" data-reveal class="delay-1">
+          <span style="font-size:2.8rem; margin-bottom:12px; display:inline-block;"><i class="fas fa-book" style="color:#10b981;"></i></span>
+          <div class="cat-name">Books & Notes</div>
+          <div class="cat-count">Textbooks, Study material</div>
+        </a>
+        <a href="shop.html?cat=fashion" class="cat-cell card-3d" data-reveal class="delay-2">
+          <span style="font-size:2.8rem; margin-bottom:12px; display:inline-block;"><i class="fas fa-tshirt" style="color:#8b5cf6;"></i></span>
+          <div class="cat-name">Fashion</div>
+          <div class="cat-count">Bags, Clothing & more</div>
+        </a>
+        <a href="shop.html?cat=instruments" class="cat-cell card-3d" data-reveal class="delay-3">
+          <span style="font-size:2.8rem; margin-bottom:12px; display:inline-block;"><i class="fas fa-guitar" style="color:#f59e0b;"></i></span>
+          <div class="cat-name">Instruments</div>
+          <div class="cat-count">Guitars, Keyboards</div>
+        </a>
+        <a href="shop.html?cat=services" class="cat-cell card-3d" data-reveal class="delay-4">
+          <span style="font-size:2.8rem; margin-bottom:12px; display:inline-block;"><i class="fas fa-tools" style="color:#64748b;"></i></span>
+          <div class="cat-name">Services</div>
+          <div class="cat-count">Tutoring, Design & more</div>
+        </a>
+        <a href="shop.html?cat=sports" class="cat-cell card-3d" data-reveal class="delay-5">
+          <span class="cat-emoji">⚽</span>
+          <div class="cat-name">Sports</div>
+          <div class="cat-count">Equipment, Gear & kits</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Trust Badges ─────────────────────────────────────── -->
+  <section style="padding:40px 0;background:var(--bg-primary);">
+    <div class="container">
+      <div class="trust-badges" data-reveal>
+        <div class="trust-badge"><span class="trust-badge-icon">🎓</span>
           <div>
-            <div>Order Approved</div>
-            <div style="font-size:0.72rem;opacity:0.6;">MacBook Pro · ₹85,000</div>
+            <div style="font-weight:800;">Verified Students</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Roll number verified</div>
           </div>
         </div>
-        <div class="floating-card fc-2">
-          <div class="fc-icon" style="background:rgba(245,158,11,0.2);font-size:1.3rem;">⭐</div>
+        <div class="trust-badge"><span class="trust-badge-icon">🛡️</span>
           <div>
-            <div>New Listing</div>
-            <div style="font-size:0.72rem;opacity:0.6;">Gaming Chair · ₹8,500</div>
+            <div style="font-weight:800;">Admin Moderated</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Every listing reviewed</div>
           </div>
         </div>
-        <div class="floating-card fc-3">
-          <div class="fc-icon" style="background:rgba(239,68,68,0.2);font-size:1.3rem;">❤️</div>
+        <div class="trust-badge"><span class="trust-badge-icon">💰</span>
           <div>
-            <div>Wishlisted</div>
-            <div style="font-size:0.72rem;opacity:0.6;">3 items saved</div>
+            <div style="font-weight:800;">Secure Payment</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Cash & UPI supported</div>
           </div>
         </div>
-
-        <!-- Phone mockup -->
-        <div class="hero-phone-mockup intro-3d-card">
-          <div style="text-align:center;margin-bottom:14px;font-size:0.78rem;color:rgba(255,255,255,0.5);font-weight:600;letter-spacing:1px;">TRENDING NOW</div>
-          <div class="mini-product">
-            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100" alt="">
-            <div><div class="mini-title">MacBook Pro M1</div><div class="mini-price">₹85,000</div></div>
+        <div class="trust-badge"><span class="trust-badge-icon">📦</span>
+          <div>
+            <div style="font-weight:800;">Campus Delivery</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Admin as middleman</div>
           </div>
-          <div class="mini-product">
-            <img src="https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=100" alt="">
-            <div><div class="mini-title">JBL Speaker</div><div class="mini-price">₹2,800</div></div>
-          </div>
-          <div class="mini-product">
-            <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100" alt="">
-            <div><div class="mini-title">College Backpack</div><div class="mini-price">₹1,200</div></div>
-          </div>
-          <div style="margin-top:14px;">
-            <div style="background:var(--gradient-accent);border-radius:10px;padding:10px;text-align:center;font-size:0.8rem;font-weight:700;color:white;">View All Products →</div>
+        </div>
+        <div class="trust-badge"><span class="trust-badge-icon">♻️</span>
+          <div>
+            <div style="font-weight:800;">Eco-Friendly</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">Reduce, reuse, resell</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ─── Features ────────────────────────────────────────── -->
-<section class="features-section">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:60px;">
-      <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;" data-reveal>Why VIIT Mart?</p>
-      <h2 class="section-title" data-reveal>Built for <span class="gradient-text">Students</span>, by Students</h2>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;">
-      <div class="feature-card card-3d" data-reveal style="--card-shine:''">
-        <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
-        <div class="feature-icon" style="background:rgba(99,102,241,0.1);">🛒</div>
-        <div class="feature-title">Easy Buying</div>
-        <div class="feature-desc">Browse, cart, and checkout with Cash or UPI in seconds. Admin-verified sellers guarantee safety.</div>
+  <!-- ─── Best Sellers ──────────────────────────────────────── -->
+  <section style="padding:80px 0;">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:50px;">
+        <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;"
+          data-reveal>🔥 Most Popular</p>
+        <h2 class="section-title" data-reveal>Best <span class="gradient-text">Sellers</span></h2>
+        <p class="section-subtitle" data-reveal>Top picks from your fellow students right now</p>
       </div>
-      <div class="feature-card card-3d" data-reveal class="delay-1">
-        <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
-        <div class="feature-icon" style="background:rgba(16,185,129,0.1);">💰</div>
-        <div class="feature-title">Simple Selling</div>
-        <div class="feature-desc">List your products in minutes. Admin approves, buyers discover, and you earn effortlessly.</div>
-      </div>
-      <div class="feature-card card-3d" data-reveal class="delay-2">
-        <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
-        <div class="feature-icon" style="background:rgba(245,158,11,0.1);">📦</div>
-        <div class="feature-title">Campus Pickup</div>
-        <div class="feature-desc">No shipping needed. Collect your products on campus through the admin middleman system.</div>
-      </div>
-      <div class="feature-card card-3d" data-reveal class="delay-3">
-        <div class="card-shine" style="position:absolute;inset:0;border-radius:24px;pointer-events:none;"></div>
-        <div class="feature-icon" style="background:rgba(139,92,246,0.1);">🛡️</div>
-        <div class="feature-title">100% Secure</div>
-        <div class="feature-desc">Admin-moderated transactions. All users verified with roll numbers. Zero tolerance for fraud.</div>
+      <div class="products-grid" id="bestsellersGrid"></div>
+      <div style="text-align:center;margin-top:36px;" data-reveal>
+        <a href="shop.html" class="btn btn-outline btn-lg"><i class="fas fa-store"></i> View All Products</a>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ─── How It Works ─────────────────────────────────────── -->
-<section class="hiw-section">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:60px;">
-      <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;" data-reveal>Simple Process</p>
-      <h2 class="section-title" data-reveal>How It <span class="gradient-text">Works</span></h2>
+  <!-- ─── Testimonials ──────────────────────────────────────── -->
+  <section style="padding:80px 0;background:var(--bg-secondary);">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:50px;">
+        <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;"
+          data-reveal>⭐ Student Reviews</p>
+        <h2 class="section-title" data-reveal>What <span class="gradient-text">Students Say</span></h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+        <div class="testimonial-card card-3d" data-reveal>
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-quote">"Got my engineering books at 60% off! The admin verification made me feel
+            completely safe. Best platform for students."</p>
+          <div class="testimonial-author">
+            <img src="https://ui-avatars.com/api/?name=Arjun+Patel&background=6366f1&color=fff&rounded=true"
+              alt="Arjun">
+            <div>
+              <div class="testimonial-name">Arjun Patel</div>
+              <div class="testimonial-role">CSE • 3rd Year</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card card-3d" data-reveal class="delay-1">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-quote">"Sold my old laptop in just 2 days! The process was so smooth — listed it, admin
+            approved it, buyer paid and I got my money. Brilliant!"</p>
+          <div class="testimonial-author">
+            <img src="https://ui-avatars.com/api/?name=Sneha+Kulkarni&background=8b5cf6&color=fff&rounded=true"
+              alt="Sneha">
+            <div>
+              <div class="testimonial-name">Sneha Kulkarni</div>
+              <div class="testimonial-role">ECE • 4th Year</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card card-3d" data-reveal class="delay-2">
+          <div class="testimonial-stars">★★★★☆</div>
+          <p class="testimonial-quote">"Amazing for hostel essentials. Bought a study chair and gaming headphones from
+            seniors at half price. Highly recommend to all freshers!"</p>
+          <div class="testimonial-author">
+            <img src="https://ui-avatars.com/api/?name=Rohan+Singh&background=f59e0b&color=fff&rounded=true"
+              alt="Rohan">
+            <div>
+              <div class="testimonial-name">Rohan Singh</div>
+              <div class="testimonial-role">MECH • 2nd Year</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
-      <div class="hiw-step card-3d" data-reveal>
-        <div class="hiw-number">01</div>
-        <div class="hiw-icon">📝</div>
-        <div class="hiw-title">Register</div>
-        <div class="hiw-desc">Sign up as a Buyer or Seller with your college roll number and phone.</div>
-      </div>
-      <div class="hiw-step card-3d" data-reveal class="delay-1">
-        <div class="hiw-number">02</div>
-        <div class="hiw-icon">🔍</div>
-        <div class="hiw-title">Browse & List</div>
-        <div class="hiw-desc">Buyers browse listings. Sellers list products which get admin-reviewed.</div>
-      </div>
-      <div class="hiw-step card-3d" data-reveal class="delay-2">
-        <div class="hiw-number">03</div>
-        <div class="hiw-icon">🛒</div>
-        <div class="hiw-title">Order & Pay</div>
-        <div class="hiw-desc">Add to cart, choose Cash on Delivery or UPI, and confirm your order.</div>
-      </div>
-      <div class="hiw-step card-3d" data-reveal class="delay-3">
-        <div class="hiw-number">04</div>
-        <div class="hiw-icon">🎉</div>
-        <div class="hiw-title">Collect</div>
-        <div class="hiw-desc">Seller delivers to admin, who notifies you to collect on campus. Done!</div>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ─── Categories ───────────────────────────────────────── -->
-<section class="cats-section">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:50px;">
-      <h2 class="section-title" data-reveal>Shop by <span class="gradient-text">Category</span></h2>
-      <p class="section-subtitle" data-reveal>Everything your campus life needs, all in one place</p>
-    </div>
-    <div class="cat-grid">
-      <a href="shop.html?cat=electronics" class="cat-cell card-3d" data-reveal>
-        <span class="cat-emoji">💻</span>
-        <div class="cat-name">Electronics</div>
-        <div class="cat-count">Laptops, Phones & more</div>
-      </a>
-      <a href="shop.html?cat=books" class="cat-cell card-3d" data-reveal class="delay-1">
-        <span class="cat-emoji">📚</span>
-        <div class="cat-name">Books & Notes</div>
-        <div class="cat-count">Textbooks, Study material</div>
-      </a>
-      <a href="shop.html?cat=fashion" class="cat-cell card-3d" data-reveal class="delay-2">
-        <span class="cat-emoji">👕</span>
-        <div class="cat-name">Fashion</div>
-        <div class="cat-count">Bags, Clothing & more</div>
-      </a>
-      <a href="shop.html?cat=furniture" class="cat-cell card-3d" data-reveal class="delay-3">
-        <span class="cat-emoji">🪑</span>
-        <div class="cat-name">Furniture</div>
-        <div class="cat-count">Chairs, Tables, Shelves</div>
-      </a>
-      <a href="shop.html?cat=services" class="cat-cell card-3d" data-reveal class="delay-4">
-        <span class="cat-emoji">🛠️</span>
-        <div class="cat-name">Services</div>
-        <div class="cat-count">Tutoring, Design & more</div>
-      </a>
-      <a href="shop.html?cat=sports" class="cat-cell card-3d" data-reveal class="delay-5">
-        <span class="cat-emoji">⚽</span>
-        <div class="cat-name">Sports</div>
-        <div class="cat-count">Equipment, Gear & kits</div>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- ─── CTA ──────────────────────────────────────────────── -->
-<section class="cta-section" data-reveal>
-  <div class="orb-a orb" style="position:absolute;"></div>
-  <div class="orb-b orb" style="position:absolute;"></div>
-  <div class="container" style="position:relative;z-index:1;">
-    <h2 class="cta-title">Ready to buy or sell?</h2>
-    <p class="cta-sub">Join hundreds of VIIT students already using the marketplace.</p>
-    <div class="cta-btns">
-      <a href="register.html" class="btn btn-primary btn-lg"><i class="fas fa-user-plus"></i> Create Free Account</a>
-      <a href="shop.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.25);"><i class="fas fa-store"></i> Browse Products</a>
-    </div>
-  </div>
-</section>
-
-<!-- ─── Footer ───────────────────────────────────────────── -->
-<footer class="footer">
-  <div class="container">
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
-      <div>
-        <div class="footer-brand">🎓 VIIT Mart</div>
-        <p style="margin-top:12px;font-size:0.88rem;line-height:1.7;color:#6060888;">Your trusted campus marketplace for buying and selling within the VIIT college community.</p>
-      </div>
-      <div class="footer-links">
-        <h4>Quick Links</h4>
-        <ul>
-          <li><a href="shop.html">Browse Products</a></li>
-          <li><a href="register.html">Sell a Product</a></li>
-          <li><a href="login.html">Login</a></li>
-          <li><a href="admin.html">Admin Portal</a></li>
-        </ul>
-      </div>
-      <div class="footer-links">
-        <h4>Categories</h4>
-        <ul>
-          <li><a href="shop.html?cat=electronics">Electronics</a></li>
-          <li><a href="shop.html?cat=books">Books &amp; Notes</a></li>
-          <li><a href="shop.html?cat=fashion">Fashion</a></li>
-          <li><a href="shop.html?cat=services">Services</a></li>
-        </ul>
-      </div>
-      <div class="footer-links">
-        <h4>Contact</h4>
-        <ul>
-          <li><a href="mailto:support@viitmart.com">📧 support@viitmart.com</a></li>
-          <li><a href="#">📞 +91 98765 43210</a></li>
-          <li><a href="#">📍 VIIT Campus, Pune</a></li>
-        </ul>
+  <!-- ─── CTA ──────────────────────────────────────────────── -->
+  <section class="cta-section" data-reveal>
+    <div class="orb-a orb" style="position:absolute;"></div>
+    <div class="orb-b orb" style="position:absolute;"></div>
+    <div class="container" style="position:relative;z-index:1;">
+      <h2 class="cta-title">Ready to buy or sell?</h2>
+      <p class="cta-sub">Join hundreds of VIIT students already using the marketplace.</p>
+      <div class="cta-btns">
+        <a href="register.html" class="btn btn-primary btn-lg"><i class="fas fa-user-plus"></i> Create Free Account</a>
+        <a href="shop.html" class="btn btn-lg"
+          style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.25);"><i
+            class="fas fa-store"></i> Browse Products</a>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© 2025 VIIT Mart. All rights reserved. Made with ❤️ by Students, for Students.</p>
+  </section>
+
+  <!-- ─── Footer ───────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+        <div>
+          <div class="footer-brand">🎓 VIIT Mart</div>
+          <p style="margin-top:12px;font-size:0.88rem;line-height:1.7;color:var(--text-muted);">Your trusted campus marketplace for buying and selling within the VIIT college community.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="shop.html">Browse Products</a></li>
+            <li><a href="register.html">Sell a Product</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="admin.html">Admin Portal</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="shop.html?cat=electronics">Electronics</a></li>
+            <li><a href="shop.html?cat=books">Books &amp; Notes</a></li>
+            <li><a href="shop.html?cat=fashion">Fashion</a></li>
+            <li><a href="shop.html?cat=services">Services</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Contact</h4>
+          <ul>
+            <li><a href="mailto:support@viitmart.com">📧 support@viitmart.com</a></li>
+            <li><a href="#">📞 +91 98765 43210</a></li>
+            <li><a href="#">📍 VIIT Campus, Pune</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025 VIIT Mart. All rights reserved. Made with ❤️ by Students, for Students.</p>
+      </div>
     </div>
-  </div>
-</footer>
+  </footer>
 
-<div id="toast-container"></div>
+  <div id="toast-container"></div>
 
-<script src="shared/js/auth.js"></script>
-<script src="shared/js/api.js"></script>
-<script src="shared/js/effects.js"></script>
-<script>
-  // ─── Auth check for navbar ──────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    const user = Auth.getUser();
-    if (user) {
-      document.getElementById('guestNav').style.display = 'none';
-      document.getElementById('userNav').style.display = 'flex';
-      document.getElementById('userDisplayName').textContent = user.name;
-      document.getElementById('userDisplayRole').textContent = user.role;
-      document.getElementById('ddName').textContent = user.name;
-      document.getElementById('ddRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-      document.getElementById('userAvatarImg').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=fff&rounded=true`;
+  <script src="shared/js/auth.js"></script>
+  <script src="shared/js/api.js"></script>
+  <script src="shared/js/effects.js"></script>
+  <script>
+    // ─── Auth check for navbar ──────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = Auth.getUser();
+      if (user) {
+        document.getElementById('guestNav').style.display = 'none';
+        document.getElementById('userNav').style.display = 'flex';
+        document.getElementById('userDisplayName').textContent = user.name;
+        document.getElementById('userDisplayRole').textContent = user.role;
+        document.getElementById('ddName').textContent = user.name;
+        document.getElementById('ddRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+        document.getElementById('userAvatarImg').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=fff&rounded=true`;
+      }
+
+      // User menu toggle
+      const trigger = document.getElementById('userMenuTrigger');
+      const dropdown = document.getElementById('userDropdown');
+      if (trigger) {
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('show'));
+      }
+
+      // Re-run reveal since content is loaded
+      if (window.refreshCursorTargets) refreshCursorTargets();
+    });
+
+    function goDashboard() {
+      const user = Auth.getUser();
+      if (!user) return;
+      if (user.role === 'buyer') window.location.href = 'buyer.html';
+      else if (user.role === 'seller') window.location.href = 'seller.html';
+      else if (user.role === 'admin') window.location.href = 'admin.html';
     }
 
-    // User menu toggle
-    const trigger = document.getElementById('userMenuTrigger');
-    const dropdown = document.getElementById('userDropdown');
-    if (trigger) {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-      });
-      document.addEventListener('click', () => dropdown.classList.remove('show'));
+    // Load best-sellers from API
+    async function loadBestSellers() {
+      try {
+        const products = await API.get('/products/bestsellers');
+        const grid = document.getElementById('bestsellersGrid');
+        if (!products.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No products yet. <a href="shop.html" style="color:var(--accent-primary)">Browse Shop</a></div>'; return; }
+        grid.innerHTML = products.slice(0, 4).map(p => {
+          const disc = p.original_price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
+          return `<div class="product-card card-3d" onclick="window.location.href='shop.html'" style="cursor:pointer;">
+          <div style="overflow:hidden;position:relative;">
+            <img src="${p.image_url}" alt="${p.title}" class="product-card-img" loading="lazy">
+            ${disc > 0 ? `<span style="position:absolute;top:10px;left:10px;background:var(--accent-red);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">${disc}% OFF</span>` : ''}
+            ${p.eco ? `<span style="position:absolute;top:10px;right:10px;background:rgba(16,185,129,0.9);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">🌿 Eco</span>` : ''}
+          </div>
+          <div class="product-card-body">
+            <div class="product-card-title">${p.title}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin:6px 0;">
+              <span class="product-card-price">₹${p.price.toLocaleString()}</span>
+              ${p.original_price ? `<span class="product-card-original">₹${p.original_price.toLocaleString()}</span>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:6px;">
+              <i class="fas fa-star" style="color:#f59e0b;font-size:0.75rem;"></i>
+              <span style="font-size:0.8rem;font-weight:700;">${(p.rating || 4.5).toFixed(1)}</span>
+              <span class="badge badge-condition" style="margin-left:6px;">${p.condition}</span>
+            </div>
+          </div>
+        </div>`;
+        }).join('');
+      } catch (e) {
+        document.getElementById('bestsellersGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)"><a href="shop.html" class="btn btn-primary">Browse Products</a></div>';
+      }
     }
+    loadBestSellers();
+  </script>
 
-    // Re-run reveal since content is loaded
-    if (window.refreshCursorTargets) refreshCursorTargets();
-  });
+  <!-- ─── Live Chat Widget ─────────────────────────────────────── -->
+  <div class="chat-widget" id="chatWidget">
+    <div class="chat-panel" id="chatPanel">
+      <div class="chat-panel-header">
+        <div>
+          <div style="font-weight:800;">💬 Support Chat</div>
+          <div style="font-size:0.75rem;opacity:0.85;">We usually reply instantly</div>
+        </div>
+        <button onclick="toggleChat()"
+          style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:1rem;">✕</button>
+      </div>
+      <div class="chat-messages-area" id="chatMessages">
+        <div class="chat-msg theirs" style="margin-top:8px;">👋 Hi! Welcome to VIIT Mart support. How can we help you
+          today?<div class="chat-msg-time">Support</div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Type a message..."
+          onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="chat-send-btn" onclick="sendChatMsg()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+    <button class="chat-bubble" onclick="toggleChat()" id="chatBubble" title="Live Chat">
+      <i class="fas fa-comment-dots"></i>
+    </button>
+  </div>
 
-  function goDashboard() {
-    const user = Auth.getUser();
-    if (!user) return;
-    if (user.role === 'buyer') window.location.href = 'buyer.html';
-    else if (user.role === 'seller') window.location.href = 'seller.html';
-    else if (user.role === 'admin') window.location.href = 'admin.html';
-  }
-</script>
+  <script>
+    function toggleChat() {
+      const panel = document.getElementById('chatPanel');
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        document.getElementById('chatInput').focus();
+        loadChatMsgs();
+      }
+    }
+    async function loadChatMsgs() {
+      try {
+        const user = Auth.getUser();
+        if (!user) return;
+        const msgs = await API.get('/chat');
+        const area = document.getElementById('chatMessages');
+        if (!msgs.length) return;
+        area.innerHTML = msgs.map(m => `<div class="chat-msg ${m.is_admin ? 'theirs' : 'mine'}">${m.message}<div class="chat-msg-time">${m.is_admin ? 'Support' : 'You'} · ${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></div>`).join('');
+        area.scrollTop = area.scrollHeight;
+      } catch { }
+    }
+    async function sendChatMsg() {
+      const user = Auth.getUser();
+      const inp = document.getElementById('chatInput');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      if (!user) { showToast('Please login to use chat', 'error'); return; }
+      inp.value = '';
+      const area = document.getElementById('chatMessages');
+      area.innerHTML += `<div class="chat-msg mine">${msg}<div class="chat-msg-time">You · just now</div></div>`;
+      area.scrollTop = area.scrollHeight;
+      try { await API.post('/chat', { message: msg }); } catch { }
+    }
+  </script>
 </body>
+
 </html>

@@ -112,7 +112,55 @@ async function initDb() {
       extra_charges REAL DEFAULT 0,
       total REAL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      reviewer_roll TEXT NOT NULL,
+      reviewer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 5,
+      comment TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      type TEXT NOT NULL DEFAULT 'percent',
+      value REAL NOT NULL,
+      min_order REAL DEFAULT 0,
+      max_uses INTEGER DEFAULT 100,
+      used_count INTEGER DEFAULT 0,
+      expires_at TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS addresses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_roll TEXT NOT NULL,
+      label TEXT NOT NULL,
+      hostel TEXT DEFAULT '',
+      room TEXT DEFAULT '',
+      landmark TEXT DEFAULT '',
+      is_default INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS return_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id TEXT NOT NULL,
+      buyer_roll TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_roll TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_admin INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
+  try { await db.exec("ALTER TABLE products ADD COLUMN images_json TEXT DEFAULT '[]'"); } catch(e) {}
   await db.run('INSERT OR IGNORE INTO earnings (id) VALUES (1)');
 
   // Seed sample products on first run
@@ -125,7 +173,7 @@ async function initDb() {
     const samples = [
       { title: 'MacBook Pro M1 – Excellent Condition', cat: 'electronics', cond: 'Like New', price: 85000, orig: 120000, qty: 1, desc: 'MacBook Pro M1 chip with 8GB RAM and 256GB SSD. Barely used for 6 months. All accessories included.', img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', loc: 'North Campus', eco: 0, rating: 4.8 },
       { title: 'Engineering Mathematics Textbook Set', cat: 'books', cond: 'Good', price: 800, orig: 2500, qty: 3, desc: 'Complete set of Engineering Mathematics books for 1st year. All volumes included.', img: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600', loc: 'South Campus', eco: 1, rating: 5.0 },
-      { title: 'Gaming Chair – Almost New', cat: 'furniture', cond: 'Like New', price: 8500, orig: 15000, qty: 1, desc: 'Ergonomic gaming chair with lumbar support. Used only 3 months.', img: 'https://images.unsplash.com/photo-1598550476439-6847785fcea6?w=600', loc: 'East Campus', eco: 0, rating: 4.6 },
+      { title: 'Acoustic Guitar – Yamaha F310', cat: 'instruments', cond: 'Good', price: 4500, orig: 8000, qty: 1, desc: 'Well maintained beginner acoustic guitar. Sounds great, minor scratches on back.', img: 'https://images.unsplash.com/photo-1550985543-f47f38aeea53?w=600', loc: 'East Campus', eco: 0, rating: 4.6 },
       { title: 'Branded College Backpack', cat: 'fashion', cond: 'Good', price: 1200, orig: 2500, qty: 2, desc: 'Spacious backpack perfect for college with laptop compartment.', img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600', loc: 'West Campus', eco: 1, rating: 4.9 },
       { title: 'JBL Bluetooth Speaker', cat: 'electronics', cond: 'Like New', price: 2800, orig: 5000, qty: 1, desc: 'JBL Flip 5 – waterproof, powerful bass, 12hr battery. Includes original box.', img: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600', loc: 'Main Building', eco: 0, rating: 4.7 },
       { title: 'Data Structures & Algorithms Books', cat: 'books', cond: 'New', price: 600, orig: 1200, qty: 5, desc: 'Set of 3 DSA books – Cormen, Sedgewick, and Skiena. Perfect for placements.', img: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600', loc: 'Library Block', eco: 1, rating: 4.8 },
@@ -250,9 +298,17 @@ app.get('/api/products', async (req, res) => {
     if (category && category !== 'all') { sql += ' AND category = ?'; params.push(category); }
     if (search) { sql += ' AND (title LIKE ? OR description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
     sql += ' ORDER BY created_at DESC';
-    res.json(await db.all(sql, params));
+    let rows = await db.all(sql, params);
+    // Parse images_json for each product
+    rows = rows.map(p => ({ ...p, images: tryParseJSON(p.images_json, [p.image_url].filter(Boolean)) }));
+    res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+function tryParseJSON(str, fallback) {
+  if (!str) return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
 
 app.get('/api/products/pending', requireAdmin, async (req, res) => {
   try { res.json(await db.all("SELECT * FROM products WHERE status = 'pending' ORDER BY created_at DESC")); }
@@ -272,10 +328,19 @@ app.get('/api/products/all', requireAdmin, async (req, res) => {
 app.post('/api/products', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'seller') return res.status(403).json({ error: 'Only sellers can list products' });
-    const { title, category, condition, price, originalPrice, quantity, description, imageUrl, location } = req.body;
+    const { title, category, condition, price, originalPrice, quantity, description, imageUrl, imageUrls, location } = req.body;
+    // Support up to 5 images
+    let imagesArr = [];
+    if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+      imagesArr = imageUrls.slice(0, 5).filter(Boolean);
+    } else if (imageUrl) {
+      imagesArr = [imageUrl];
+    }
+    const primaryImage = imagesArr[0] || '';
+    const imagesJson = JSON.stringify(imagesArr);
     const result = await db.run(
-      "INSERT INTO products (title,category,condition,price,original_price,quantity,description,image_url,location,seller_roll,seller_name,seller_phone,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'pending')",
-      [title, category, condition, price, originalPrice || null, quantity || 1, description, imageUrl || '', location || '', req.user.rollNumber, req.user.name, req.user.phone]
+      "INSERT INTO products (title,category,condition,price,original_price,quantity,description,image_url,images_json,location,seller_roll,seller_name,seller_phone,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')",
+      [title, category, condition, price, originalPrice || null, quantity || 1, description, primaryImage, imagesJson, location || '', req.user.rollNumber, req.user.name, req.user.phone]
     );
     const admin = await db.get("SELECT roll_number FROM users WHERE role = 'admin'");
     if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [admin.roll_number, '🆕 New Product Pending', `"${title}" by ${req.user.name} needs approval`]);
@@ -445,8 +510,201 @@ function calcServiceFee(price) {
   return Math.min(1000, Math.round(price * 0.02));
 }
 
+// ─── REVIEWS ──────────────────────────────────────────────────────────────────
+app.get('/api/reviews/:productId', async (req, res) => {
+  try { res.json(await db.all('SELECT * FROM reviews WHERE product_id = ? ORDER BY created_at DESC', [req.params.productId])); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/reviews', authenticate, async (req, res) => {
+  try {
+    const { productId, rating, comment } = req.body;
+    if (!productId || !rating) return res.status(400).json({ error: 'Product ID and rating required' });
+    const existing = await db.get('SELECT id FROM reviews WHERE product_id = ? AND reviewer_roll = ?', [productId, req.user.rollNumber]);
+    if (existing) {
+      await db.run('UPDATE reviews SET rating=?, comment=?, created_at=datetime("now") WHERE product_id=? AND reviewer_roll=?', [rating, comment || '', productId, req.user.rollNumber]);
+    } else {
+      await db.run('INSERT INTO reviews (product_id,reviewer_roll,reviewer_name,rating,comment) VALUES (?,?,?,?,?)', [productId, req.user.rollNumber, req.user.name, rating, comment || '']);
+    }
+    // Update product average rating
+    const avg = await db.get('SELECT AVG(rating) as avg FROM reviews WHERE product_id = ?', [productId]);
+    if (avg && avg.avg) await db.run('UPDATE products SET rating = ? WHERE id = ?', [parseFloat(avg.avg.toFixed(1)), productId]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── COUPONS ──────────────────────────────────────────────────────────────────
+app.get('/api/coupons', requireAdmin, async (req, res) => {
+  try { res.json(await db.all('SELECT * FROM coupons ORDER BY created_at DESC')); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/coupons', requireAdmin, async (req, res) => {
+  try {
+    const { code, type, value, minOrder, maxUses, expiresAt } = req.body;
+    if (!code || !value) return res.status(400).json({ error: 'Code and value required' });
+    await db.run('INSERT INTO coupons (code,type,value,min_order,max_uses,expires_at) VALUES (?,?,?,?,?,?)',
+      [code.toUpperCase(), type || 'percent', value, minOrder || 0, maxUses || 100, expiresAt || null]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message || 'Coupon code already exists' }); }
+});
+
+app.delete('/api/coupons/:id', requireAdmin, async (req, res) => {
+  try { await db.run('DELETE FROM coupons WHERE id = ?', [req.params.id]); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/coupons/validate', async (req, res) => {
+  try {
+    const { code, total } = req.body;
+    if (!code) return res.status(400).json({ error: 'Coupon code required' });
+    const coupon = await db.get("SELECT * FROM coupons WHERE code = ? AND is_active = 1", [code.toUpperCase()]);
+    if (!coupon) return res.status(404).json({ error: 'Invalid or expired coupon code' });
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return res.status(400).json({ error: 'Coupon has expired' });
+    if (coupon.used_count >= coupon.max_uses) return res.status(400).json({ error: 'Coupon usage limit reached' });
+    if (total < coupon.min_order) return res.status(400).json({ error: `Minimum order of ₹${coupon.min_order} required` });
+    const discount = coupon.type === 'percent' ? Math.round((total * coupon.value) / 100) : coupon.value;
+    const finalDiscount = Math.min(discount, total);
+    res.json({ success: true, discount: finalDiscount, type: coupon.type, value: coupon.value, code: coupon.code });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── ADDRESSES ────────────────────────────────────────────────────────────────
+app.get('/api/addresses', authenticate, async (req, res) => {
+  try { res.json(await db.all('SELECT * FROM addresses WHERE user_roll = ? ORDER BY is_default DESC, created_at DESC', [req.user.rollNumber])); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/addresses', authenticate, async (req, res) => {
+  try {
+    const { label, hostel, room, landmark, isDefault } = req.body;
+    if (!label) return res.status(400).json({ error: 'Label required' });
+    if (isDefault) await db.run('UPDATE addresses SET is_default=0 WHERE user_roll=?', [req.user.rollNumber]);
+    const result = await db.run('INSERT INTO addresses (user_roll,label,hostel,room,landmark,is_default) VALUES (?,?,?,?,?,?)',
+      [req.user.rollNumber, label, hostel || '', room || '', landmark || '', isDefault ? 1 : 0]);
+    res.json({ id: result.lastID, success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/addresses/:id', authenticate, async (req, res) => {
+  try { await db.run('DELETE FROM addresses WHERE id = ? AND user_roll = ?', [req.params.id, req.user.rollNumber]); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/addresses/:id/default', authenticate, async (req, res) => {
+  try {
+    await db.run('UPDATE addresses SET is_default=0 WHERE user_roll=?', [req.user.rollNumber]);
+    await db.run('UPDATE addresses SET is_default=1 WHERE id=? AND user_roll=?', [req.params.id, req.user.rollNumber]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── RETURN REQUESTS ──────────────────────────────────────────────────────────
+app.get('/api/returns/mine', authenticate, async (req, res) => {
+  try { res.json(await db.all('SELECT * FROM return_requests WHERE buyer_roll = ? ORDER BY created_at DESC', [req.user.rollNumber])); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/returns/all', requireAdmin, async (req, res) => {
+  try { res.json(await db.all('SELECT r.*, o.product_title, o.buyer_name FROM return_requests r LEFT JOIN orders o ON r.order_id = o.id ORDER BY r.created_at DESC')); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/returns', authenticate, async (req, res) => {
+  try {
+    const { orderId, reason } = req.body;
+    if (!orderId || !reason) return res.status(400).json({ error: 'Order ID and reason required' });
+    const order = await db.get('SELECT * FROM orders WHERE id = ? AND buyer_roll = ?', [orderId, req.user.rollNumber]);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    const existing = await db.get('SELECT id FROM return_requests WHERE order_id = ?', [orderId]);
+    if (existing) return res.status(409).json({ error: 'Return already requested for this order' });
+    await db.run('INSERT INTO return_requests (order_id,buyer_roll,reason) VALUES (?,?,?)', [orderId, req.user.rollNumber, reason]);
+    const admin = await db.get("SELECT roll_number FROM users WHERE role = 'admin'");
+    if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [admin.roll_number, '↩️ Return Request', `${req.user.name} requested a return for order "${order.product_title}"`]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/returns/:id/status', requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const ret = await db.get('SELECT * FROM return_requests WHERE id = ?', [req.params.id]);
+    if (!ret) return res.status(404).json({ error: 'Return not found' });
+    await db.run('UPDATE return_requests SET status = ? WHERE id = ?', [status, req.params.id]);
+    await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [ret.buyer_roll, '↩️ Return Update', `Your return request status changed to: ${status}`]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+  try {
+    const [topProducts, revenueByDay, userGrowth, orderFunnel, categoryStats] = await Promise.all([
+      db.all(`SELECT p.title, COUNT(o.id) as order_count, SUM(o.total_paid) as revenue
+        FROM orders o JOIN products p ON o.product_id = p.id
+        GROUP BY o.product_id ORDER BY order_count DESC LIMIT 5`),
+      db.all(`SELECT date(ordered_at) as day, SUM(total_paid) as revenue, COUNT(*) as orders
+        FROM orders WHERE ordered_at >= date('now','-30 days')
+        GROUP BY day ORDER BY day ASC`),
+      db.all(`SELECT date(registered_at) as day, COUNT(*) as count
+        FROM users WHERE registered_at >= date('now','-30 days')
+        GROUP BY day ORDER BY day ASC`),
+      db.all(`SELECT status, COUNT(*) as count FROM orders GROUP BY status`),
+      db.all(`SELECT p.category, COUNT(o.id) as orders FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY orders DESC`)
+    ]);
+    res.json({ topProducts, revenueByDay, userGrowth, orderFunnel, categoryStats });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── LIVE CHAT ────────────────────────────────────────────────────────────────
+app.get('/api/chat', authenticate, async (req, res) => {
+  try {
+    const isAdmin = req.user.role === 'admin';
+    const msgs = isAdmin
+      ? await db.all('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 100')
+      : await db.all('SELECT * FROM chat_messages WHERE user_roll = ? OR is_admin = 1 ORDER BY created_at ASC LIMIT 100', [req.user.rollNumber]);
+    res.json(msgs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/chat', authenticate, async (req, res) => {
+  try {
+    const { message, targetRoll } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message required' });
+    const isAdmin = req.user.role === 'admin';
+    const roll = isAdmin && targetRoll ? targetRoll : req.user.rollNumber;
+    await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
+      [roll, req.user.name, message, isAdmin ? 1 : 0]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/chat/admin-reply', requireAdmin, async (req, res) => {
+  try {
+    const { targetRoll, message } = req.body;
+    if (!targetRoll || !message) return res.status(400).json({ error: 'Roll and message required' });
+    await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
+      [targetRoll, req.user.name, message, 1]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── BEST SELLERS (sorted by order count) ────────────────────────────────────
+app.get('/api/products/bestsellers', async (req, res) => {
+  try {
+    const products = await db.all(`
+      SELECT p.*, COUNT(o.id) as order_count
+      FROM products p LEFT JOIN orders o ON p.id = o.product_id
+      WHERE p.status = 'approved'
+      GROUP BY p.id ORDER BY order_count DESC, p.rating DESC LIMIT 8`);
+    res.json(products);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+
 // ─── Static File Serving ──────────────────────────────────────────────────────
-const pages = ['index', 'shop', 'login', 'register', 'buyer', 'seller', 'admin'];
+const pages = ['index', 'shop', 'login', 'register', 'buyer', 'seller', 'admin', 'product', 'track'];
 pages.forEach(p => {
   app.get(`/${p === 'index' ? '' : p}`, (req, res) =>
     res.sendFile(path.join(__dirname, p === 'index' ? 'index.html' : `${p}.html`)));

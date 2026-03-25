@@ -18,34 +18,32 @@
       position: relative;
       overflow: hidden;
     }
-    .admin-dash { display: grid; grid-template-columns: 240px 1fr; gap: 0; min-height: 100vh; }
+    .admin-dash { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; background: var(--bg-primary); }
     .admin-sidebar {
-      background: #0d0d1f;
-      border-right: 1px solid #1a1a2f;
-      padding: 0;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      width: 240px;
-      overflow-y: auto;
-      z-index: 100;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
     }
-    .admin-sidebar-header { padding: 24px 20px; border-bottom: 1px solid #1a1a2f; }
+    .admin-sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border-color); }
     .admin-brand { font-size: 1.2rem; font-weight: 800; color: white; }
-    .admin-version { font-size: 0.7rem; color: #666; margin-top: 2px; }
+    .admin-version { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
     .admin-nav-item {
       display: flex; align-items: center; gap: 12px;
       padding: 13px 20px; cursor: pointer; transition: all 0.2s;
-      font-weight: 600; font-size: 0.88rem; color: #8888a8;
+      font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);
       border-left: 3px solid transparent;
     }
-    .admin-nav-item:hover { background: rgba(99,102,241,0.08); color: #a0a0ff; }
-    .admin-nav-item.active { background: rgba(99,102,241,0.12); color: #a5b4fc; border-left-color: var(--accent-primary); }
+    .admin-nav-item:hover { background: rgba(99,102,241,0.08); color: var(--text-primary); }
+    .admin-nav-item.active { background: rgba(99,102,241,0.12); color: var(--text-primary); border-left-color: var(--accent-primary); font-weight: 700; }
     .admin-nav-item .nav-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.95rem; }
-    .admin-main { margin-left: 240px; min-height: 100vh; background: var(--bg-primary); }
-    .admin-topbar { background: var(--nav-bg); border-bottom: 1px solid var(--border-color); padding: 0 28px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 99; backdrop-filter: blur(20px); }
-    .admin-section { display: none; padding: 28px; }
+    .admin-main { min-height: 100vh; background: var(--bg-primary); }
+    .admin-topbar { background: var(--nav-bg); border-bottom: 1px solid var(--border-color); padding: 0 28px; height: 70px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 99; backdrop-filter: blur(20px); }
+    .admin-section { display: none; padding: 32px; max-width: 1400px; margin: 0 auto; }
     .admin-section.active { display: block; animation: fadeIn 0.3s ease; }
     .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .admin-stat-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 20px; transition: all 0.2s; }
@@ -65,7 +63,10 @@
     .approval-fee-row { display: flex; gap: 8px; align-items: center; }
     .fee-input { width: 80px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 0.82rem; outline: none; }
     .fee-input:focus { border-color: var(--accent-primary); }
-    @media (max-width: 900px) { .admin-sidebar { transform: translateX(-100%); } .admin-main { margin-left: 0; } }
+    @media (max-width: 900px) { 
+      .admin-dash { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; } 
+    }
   </style>
 </head>
 <body>
@@ -119,10 +120,13 @@
         <div class="admin-nav-item" onclick="showAdmin('inventory')"><div class="nav-icon" style="background:rgba(139,92,246,0.15);">🗂️</div>Live Inventory</div>
         <div class="admin-nav-item" onclick="showAdmin('community')"><div class="nav-icon" style="background:rgba(59,130,246,0.15);">👥</div>Community</div>
         <div class="admin-nav-item" onclick="showAdmin('earnings')"><div class="nav-icon" style="background:rgba(245,158,11,0.15);">💰</div>Earnings</div>
+        <div class="admin-nav-item" onclick="showAdmin('analytics')"><div class="nav-icon" style="background:rgba(99,102,241,0.15);">📊</div>Analytics</div>
+        <div class="admin-nav-item" onclick="showAdmin('discounts')"><div class="nav-icon" style="background:rgba(16,185,129,0.15);">🏷️</div>Discounts</div>
+        <div class="admin-nav-item" onclick="showAdmin('livechat')"><div class="nav-icon" style="background:rgba(236,72,153,0.15);">💬</div>Live Chat</div>
       </div>
-      <div style="padding:16px 20px;border-top:1px solid #1a1a2f;">
-        <div style="font-size:0.8rem;color:#555;margin-bottom:10px;">Logged in as Admin</div>
-        <div class="admin-nav-item" style="padding:10px 12px;border-radius:10px;color:#ef4444;" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+      <div style="padding:16px 20px;border-top:1px solid var(--border-color);">
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Logged in as Admin</div>
+        <div class="admin-nav-item" style="padding:10px 12px;border-radius:10px;color:var(--accent-red);" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
       </div>
     </div>
 
@@ -210,9 +214,77 @@
           <div class="admin-card-body" style="padding:28px;" id="earningsContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
         </div>
       </div>
+
+      <!-- Analytics -->
+      <div id="admin-analytics" class="admin-section">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;" id="analyticsStats">
+          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val" id="ana-revenue">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="ana-orders">—</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-val" id="ana-avg">—</div></div>
+        </div>
+        <div class="admin-card" style="margin-bottom:20px;">
+          <div class="admin-card-header"><div class="admin-card-title">📈 Top Products by Orders</div></div>
+          <div class="admin-card-body" id="topProductsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+        </div>
+        <div class="admin-card" style="margin-bottom:20px;">
+          <div class="admin-card-header"><div class="admin-card-title">🔵 Order Status Funnel</div></div>
+          <div class="admin-card-body" id="funnelContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header"><div class="admin-card-title">📦 Sales by Category</div></div>
+          <div class="admin-card-body" id="categoryStatsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Discounts -->
+      <div id="admin-discounts" class="admin-section">
+        <div class="admin-card" style="margin-bottom:20px;">
+          <div class="admin-card-header">
+            <div class="admin-card-title">🏷️ Create Coupon</div>
+          </div>
+          <div class="admin-card-body" style="padding:32px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;">
+              <div class="form-group"><label class="form-label required">Code</label><input type="text" id="cpCode" class="form-control" placeholder="VIIT10" style="text-transform:uppercase;"></div>
+              <div class="form-group"><label class="form-label">Type</label><select id="cpType" class="form-control"><option value="percent">Percentage</option><option value="flat">Flat Amount</option></select></div>
+              <div class="form-group"><label class="form-label required">Value</label><input type="number" id="cpValue" class="form-control" placeholder="10 (% or ₹)"></div>
+              <div class="form-group"><label class="form-label">Min Order (₹)</label><input type="number" id="cpMin" class="form-control" placeholder="0"></div>
+              <div class="form-group"><label class="form-label">Max Uses</label><input type="number" id="cpMax" class="form-control" placeholder="100"></div>
+              <div class="form-group"><label class="form-label">Expires At</label><input type="date" id="cpExpiry" class="form-control"></div>
+            </div>
+            <button class="btn btn-primary" onclick="createCoupon()"><i class="fas fa-plus"></i> Create Coupon</button>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">📋 All Coupons</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadDiscounts()"><i class="fas fa-sync"></i></button>
+          </div>
+          <div class="admin-card-body" id="couponsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Live Chat -->
+      <div id="admin-livechat" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">💬 Live Chat — User Messages</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadLiveChat()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="admin-card-body" style="padding:20px;">
+            <div id="chatThreads" style="margin-bottom:20px;"></div>
+            <div style="background:var(--bg-primary);border-radius:14px;padding:18px;">
+              <div class="form-group"><label class="form-label">Reply to User (Roll Number)</label><input type="text" id="chatTargetRoll" class="form-control" placeholder="e.g. 22VIIT001"></div>
+              <div class="form-group"><label class="form-label">Message</label><textarea id="chatAdminMsg" class="form-control" rows="2" placeholder="Type your reply..."></textarea></div>
+              <button class="btn btn-primary btn-sm" onclick="sendAdminChat()"><i class="fas fa-paper-plane"></i> Send Reply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
 
 <!-- Confirm Modal -->
 <div class="modal-overlay" id="confirmModal">
@@ -541,7 +613,7 @@
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('admin-' + section).classList.add('active');
     event.currentTarget.classList.add('active');
-    const titles = { overview:'Overview', approvals:'Pending Approvals', orders:'All Orders', inventory:'Live Inventory', community:'Community Directory', earnings:'Platform Earnings' };
+    const titles = { overview:'Overview', approvals:'Pending Approvals', orders:'All Orders', inventory:'Live Inventory', community:'Community Directory', earnings:'Platform Earnings', analytics:'Analytics Dashboard', discounts:'Discounts & Coupons', livechat:'Live Chat' };
     document.getElementById('adminPageTitle').textContent = titles[section] || section;
     // Load data for section
     if (section === 'orders') loadOrders();
@@ -549,6 +621,9 @@
     else if (section === 'community') loadCommunity();
     else if (section === 'earnings') loadEarnings();
     else if (section === 'approvals') loadApprovals();
+    else if (section === 'analytics') loadAnalytics();
+    else if (section === 'discounts') loadDiscounts();
+    else if (section === 'livechat') loadLiveChat();
   }
 
   function confirmFactoryReset() {
@@ -563,6 +638,109 @@
       } catch(err) { showToast(err.message, 'error'); }
     };
     openModal('confirmModal');
+  }
+
+  // ─── Analytics ────────────────────────────────────────────────
+  async function loadAnalytics() {
+    try {
+      const data = await API.get('/admin/analytics');
+      // Stats
+      document.getElementById('ana-revenue').textContent = `₹${(data.totalRevenue||0).toLocaleString()}`;
+      document.getElementById('ana-orders').textContent = data.totalOrders||0;
+      document.getElementById('ana-avg').textContent = data.totalOrders ? `₹${Math.round(data.totalRevenue/data.totalOrders).toLocaleString()}` : '₹0';
+      // Top Products
+      document.getElementById('topProductsContent').innerHTML = (data.topProducts||[]).length
+        ? (data.topProducts.slice(0,5).map((p,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;align-items:center;gap:12px;"><span style="font-weight:900;font-size:0.82rem;width:24px;color:var(--accent-primary);">#${i+1}</span><div><div style="font-weight:700;font-size:0.9rem;">${p.title}</div><div style="font-size:0.75rem;color:var(--text-muted);">${p.orders} orders</div></div></div><div style="font-weight:800;color:var(--accent-primary);">₹${(p.revenue||0).toLocaleString()}</div></div>`).join(''))
+        : '<p style="text-align:center;color:var(--text-muted);">No order data yet</p>';
+      // Funnel
+      document.getElementById('funnelContent').innerHTML = (data.statusFunnel||[]).length
+        ? (data.statusFunnel.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);"><span style="font-weight:600;text-transform:capitalize;">${s.status.replace(/-/g,' ')}</span><span class="status-badge status-${s.status}">${s.count}</span></div>`).join(''))
+        : '<p style="text-align:center;color:var(--text-muted);">No orders yet</p>';
+      // Category sales
+      const catData = data.categorySales || [];
+      const catMax = Math.max(...catData.map(c => c.revenue), 1);
+      document.getElementById('categoryStatsContent').innerHTML = catData.length
+        ? catData.map(c => `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.88rem;font-weight:600;"><span style="text-transform:capitalize;">${c.category}</span><span>₹${(c.revenue||0).toLocaleString()} (${c.count} sales)</span></div><div style="height:8px;background:var(--border-color);border-radius:4px;"><div style="height:100%;width:${Math.round(c.revenue/catMax*100)}%;background:var(--gradient-accent);border-radius:4px;transition:width 1s;"></div></div></div>`).join('')
+        : '<p style="text-align:center;color:var(--text-muted);">No sales data yet</p>';
+    } catch(e) { document.getElementById('topProductsContent').innerHTML = '<p style="color:var(--accent-red);">Failed to load analytics</p>'; }
+  }
+
+  // ─── Coupons ──────────────────────────────────────────────────
+  async function loadDiscounts() {
+    try {
+      const coupons = await API.get('/coupons');
+      document.getElementById('couponsContent').innerHTML = !coupons.length
+        ? '<p style="text-align:center;padding:30px;color:var(--text-muted);">No coupons yet. Create one above!</p>'
+        : `<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Order</th><th>Uses</th><th>Expires</th><th>Action</th></tr></thead><tbody>${
+          coupons.map(c => `<tr>
+            <td><span style="font-weight:800;font-family:monospace;font-size:0.95rem;">${c.code}</span></td>
+            <td>${c.type === 'percent' ? '%' : '₹'} ${c.type.charAt(0).toUpperCase()+c.type.slice(1)}</td>
+            <td style="color:var(--accent-green);font-weight:800;">${c.type==='percent'?c.value+'%':'₹'+c.value}</td>
+            <td>₹${c.min_order||0}</td>
+            <td>${c.used_count||0} / ${c.max_uses||'∞'}</td>
+            <td>${c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'Never'}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id})"><i class="fas fa-trash"></i></button></td>
+          </tr>`).join('')
+        }</tbody></table></div>`;
+    } catch(e) { document.getElementById('couponsContent').innerHTML = '<p style="color:var(--accent-red);">Failed to load</p>'; }
+  }
+
+  async function createCoupon() {
+    const code = document.getElementById('cpCode').value.trim().toUpperCase();
+    const type = document.getElementById('cpType').value;
+    const value = parseFloat(document.getElementById('cpValue').value);
+    if (!code || !value) { showToast('Code and value are required', 'error'); return; }
+    try {
+      await API.post('/coupons', {
+        code, type, value,
+        minOrder: parseFloat(document.getElementById('cpMin').value)||0,
+        maxUses: parseInt(document.getElementById('cpMax').value)||null,
+        expiresAt: document.getElementById('cpExpiry').value||null
+      });
+      showToast(`Coupon ${code} created! 🏷️`, 'success');
+      ['cpCode','cpValue','cpMin','cpMax','cpExpiry'].forEach(id => document.getElementById(id).value='');
+      await loadDiscounts();
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  async function deleteCoupon(id) {
+    if (!confirm('Delete this coupon?')) return;
+    try { await API.delete(`/coupons/${id}`); await loadDiscounts(); showToast('Coupon deleted', 'info'); } catch(err) { showToast(err.message,'error'); }
+  }
+
+  // ─── Live Chat ────────────────────────────────────────────────
+  async function loadLiveChat() {
+    try {
+      const msgs = await API.get('/chat/all');
+      const el = document.getElementById('chatThreads');
+      if (!msgs.length) { el.innerHTML = '<p style="text-align:center;padding:30px;color:var(--text-muted);">No messages from users yet</p>'; return; }
+      // Group by sender
+      const byUser = {};
+      msgs.forEach(m => { if (!byUser[m.roll_number]) byUser[m.roll_number] = { name: m.sender_name, roll: m.roll_number, messages: [] }; byUser[m.roll_number].messages.push(m); });
+      el.innerHTML = Object.values(byUser).map(u => `
+        <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;">
+          <div style="font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;">
+            <span>👤 ${u.name} <span style="color:var(--text-muted);font-size:0.8rem;font-weight:500;">(${u.roll})</span></span>
+            <span style="font-size:0.78rem;color:var(--text-muted);">${u.messages.length} message${u.messages.length!==1?'s':''}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;">
+            ${u.messages.slice(-5).map(m => `<div class="chat-msg ${m.is_admin?'theirs':'mine'}" style="max-width:90%;">${m.message}<div class="chat-msg-time">${m.is_admin?'You (Admin)':'User'} · ${new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="document.getElementById('chatTargetRoll').value='${u.roll}';document.getElementById('chatAdminMsg').focus();">Reply ↩</button>
+        </div>`).join('');
+    } catch(e) { document.getElementById('chatThreads').innerHTML = '<p style="color:var(--accent-red);">Failed to load chats</p>'; }
+  }
+
+  async function sendAdminChat() {
+    const roll = document.getElementById('chatTargetRoll').value.trim();
+    const msg = document.getElementById('chatAdminMsg').value.trim();
+    if (!roll || !msg) { showToast('Enter roll number and message', 'error'); return; }
+    try {
+      await API.post('/chat/admin-reply', { targetRoll: roll, message: msg });
+      showToast('Reply sent! 📤', 'success');
+      document.getElementById('chatAdminMsg').value = '';
+      await loadLiveChat();
+    } catch(err) { showToast(err.message, 'error'); }
   }
 </script>
 </body>

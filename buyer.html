@@ -4,103 +4,203 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Dashboard — VIIT Mart</title>
+  <meta name="description" content="Buyer dashboard for VIIT Mart — view orders, wishlist, saved addresses, return requests and notifications.">
   <link rel="stylesheet" href="shared/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .dash-layout { display: grid; grid-template-columns: 260px 1fr; gap: 28px; align-items: start; }
     .dash-sidebar { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 20px; position: sticky; top: 90px; }
     .dash-nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 4px; }
-    .dash-nav-item:hover, .dash-nav-item.active { background: rgba(99,102,241,0.08); color: var(--accent-primary); }
+    .dash-nav-item:hover { background: rgba(99,102,241,0.08); color: var(--accent-primary); }
     .dash-nav-item.active { background: var(--gradient-accent); color: white; }
     .dash-section { display: none; }
     .dash-section.active { display: block; }
     .order-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    .order-table th { text-align: left; padding: 14px 12px; font-weight: 700; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); white-space: nowrap; }
+    .order-table th { text-align: left; padding: 14px 12px; font-weight: 700; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); }
     .order-table td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
     .order-table tr:last-child td { border-bottom: none; }
     .order-table tr:hover td { background: var(--bg-primary); }
+    .section-card { background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 24px; margin-bottom: 20px; }
     @media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } .dash-sidebar { position: static; } }
   </style>
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+<canvas id="particleCanvas"></canvas>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT <span style="color:var(--accent-primary)">Mart</span></div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
 
-<!-- Navbar -->
 <nav class="navbar">
   <div class="navbar-inner container">
     <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
     <div style="flex:1"></div>
     <div class="nav-actions">
       <button class="dark-toggle" id="darkModeToggle"></button>
-      <a href="shop.html" class="btn btn-primary btn-sm"><i class="fas fa-store"></i> Shop</a>
+      <a href="shop.html" class="btn btn-ghost btn-sm"><i class="fas fa-store"></i> Browse</a>
       <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Logout</button>
     </div>
   </div>
 </nav>
 
-<main class="page-pad" style="padding-bottom:60px;">
+<main class="page-pad" style="padding-bottom:80px;">
   <div class="container" style="padding-top:32px;">
-    <!-- Header -->
-    <div style="margin-bottom:28px;" data-reveal>
-      <h1 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;" id="dashTitle">My Dashboard</h1>
-      <p id="dashSubtitle" style="color:var(--text-muted);margin-top:4px;">Manage your orders, wishlist and account</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:12px;" data-reveal>
+      <div>
+        <h1 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;" id="dashTitle">My Dashboard</h1>
+        <p style="color:var(--text-muted);margin-top:4px;">Manage your orders, wishlist, addresses and more</p>
+      </div>
+      <a href="shop.html" class="btn btn-primary"><i class="fas fa-shopping-bag"></i> Shop Now</a>
     </div>
 
     <div class="dash-layout">
-      <!-- Sidebar Nav -->
+      <!-- Sidebar -->
       <div class="dash-sidebar" data-reveal="left">
-        <!-- Profile Card -->
         <div style="text-align:center;padding:16px 0 20px;border-bottom:1px solid var(--border-color);margin-bottom:16px;">
-          <img id="profileAvatar" src="" style="width:68px;height:68px;border-radius:20px;margin-bottom:12px;border:3px solid var(--accent-primary);">
+          <img id="profileAvatar" src="" style="width:68px;height:68px;border-radius:20px;margin-bottom:12px;border:3px solid var(--accent-primary);" loading="lazy">
           <div style="font-weight:800;font-size:1rem;" id="profileName">—</div>
           <div style="font-size:0.8rem;color:var(--text-muted);" id="profileInfo">—</div>
         </div>
-        <div class="dash-nav-item active" onclick="showSection('overview')"><i class="fas fa-home"></i> Overview</div>
-        <div class="dash-nav-item" onclick="showSection('orders')"><i class="fas fa-box"></i> My Orders</div>
-        <div class="dash-nav-item" onclick="showSection('wishlist')"><i class="fas fa-heart"></i> Wishlist</div>
-        <div class="dash-nav-item" onclick="showSection('notifs')"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
+        <div class="dash-nav-item active" onclick="showSection('overview',this)"><i class="fas fa-home"></i> Overview</div>
+        <div class="dash-nav-item" onclick="showSection('orders',this)"><i class="fas fa-shopping-bag"></i> My Orders</div>
+        <div class="dash-nav-item" onclick="showSection('tracking',this)"><i class="fas fa-map-marker-alt"></i> Order Tracking</div>
+        <div class="dash-nav-item" onclick="showSection('wishlist',this)"><i class="fas fa-heart"></i> Wishlist</div>
+        <div class="dash-nav-item" onclick="showSection('addresses',this)"><i class="fas fa-map-pin"></i> Saved Addresses</div>
+        <div class="dash-nav-item" onclick="showSection('returns',this)"><i class="fas fa-undo"></i> Return Requests</div>
+        <div class="dash-nav-item" onclick="showSection('analytics',this)"><i class="fas fa-chart-bar"></i> Spending Analytics</div>
+        <div class="dash-nav-item" onclick="showSection('notifs',this)"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
+        <div class="dash-nav-item" onclick="showSection('settings',this)"><i class="fas fa-cog"></i> Account Settings</div>
         <div class="dash-nav-item" style="margin-top:12px;color:var(--accent-red);" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
       </div>
 
-      <!-- Content -->
       <div>
         <!-- Overview -->
         <div id="sec-overview" class="dash-section active" data-reveal>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px;" id="statsGrid">
-            <div class="stat-card"><div class="stat-label">Orders Placed</div><div class="stat-val" id="statOrders">—</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;">
+            <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="statOrders">—</div></div>
+            <div class="stat-card"><div class="stat-label">Total Spent</div><div class="stat-val" id="statSpent">—</div></div>
             <div class="stat-card"><div class="stat-label">Wishlist Items</div><div class="stat-val" id="statWishlist">—</div></div>
-            <div class="stat-card"><div class="stat-label">Cart Items</div><div class="stat-val" id="statCart">—</div></div>
           </div>
-          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
-            <h3 style="font-weight:800;margin-bottom:20px;">Recent Orders</h3>
-            <div id="recentOrdersTable"></div>
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:16px;">Recent Orders</h3>
+            <div id="recentOrders"></div>
           </div>
         </div>
 
         <!-- Orders -->
         <div id="sec-orders" class="dash-section">
-          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
-            <h3 style="font-weight:800;margin-bottom:20px;">All My Orders</h3>
-            <div id="ordersTableFull"></div>
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:16px;">My Orders</h3>
+            <div id="ordersTable"></div>
+          </div>
+        </div>
+
+        <!-- Order Tracking -->
+        <div id="sec-tracking" class="dash-section">
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:6px;">Order Tracking</h3>
+            <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px;">Select an order to view its live tracking status</p>
+            <div style="margin-bottom:20px;">
+              <label class="form-label">Select Order</label>
+              <select id="trackOrderSelect" class="form-control" onchange="renderTracking()">
+                <option value="">— Choose an order —</option>
+              </select>
+            </div>
+            <div id="trackingContent"></div>
           </div>
         </div>
 
         <!-- Wishlist -->
         <div id="sec-wishlist" class="dash-section">
-          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
-            <h3 style="font-weight:800;margin-bottom:20px;">❤️ My Wishlist</h3>
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:16px;">My Wishlist</h3>
             <div id="wishlistContent"></div>
+          </div>
+        </div>
+
+        <!-- Saved Addresses -->
+        <div id="sec-addresses" class="dash-section">
+          <div class="section-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+              <h3 style="font-weight:800;">Saved Addresses</h3>
+              <button class="btn btn-primary btn-sm" onclick="showAddressForm()"><i class="fas fa-plus"></i> Add Address</button>
+            </div>
+            <div id="addressForm" style="display:none;background:var(--bg-primary);border-radius:14px;padding:20px;margin-bottom:20px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group" style="grid-column:1/-1;"><label class="form-label required">Label (e.g. Hostel A, Home)</label><input type="text" id="addrLabel" class="form-control" placeholder="My Hostel"></div>
+                <div class="form-group"><label class="form-label">Hostel / Building</label><input type="text" id="addrHostel" class="form-control" placeholder="Boys Hostel Block B"></div>
+                <div class="form-group"><label class="form-label">Room Number</label><input type="text" id="addrRoom" class="form-control" placeholder="204"></div>
+                <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Landmark</label><input type="text" id="addrLandmark" class="form-control" placeholder="Near the canteen"></div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" id="addrDefault"> Set as default address</label>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:14px;">
+                <button class="btn btn-primary btn-sm" onclick="saveAddress()">Save Address</button>
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('addressForm').style.display='none'">Cancel</button>
+              </div>
+            </div>
+            <div id="addressesList"></div>
+          </div>
+        </div>
+
+        <!-- Return Requests -->
+        <div id="sec-returns" class="dash-section">
+          <div class="section-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+              <h3 style="font-weight:800;">Return Requests</h3>
+              <button class="btn btn-primary btn-sm" onclick="showReturnForm()"><i class="fas fa-undo"></i> Request Return</button>
+            </div>
+            <div id="returnForm" style="display:none;background:var(--bg-primary);border-radius:14px;padding:20px;margin-bottom:20px;">
+              <div class="form-group"><label class="form-label required">Order ID</label><input type="text" id="returnOrderId" class="form-control" placeholder="Paste your Order ID"></div>
+              <div class="form-group"><label class="form-label required">Reason for Return</label><textarea id="returnReason" class="form-control" rows="3" placeholder="Please describe the issue..."></textarea></div>
+              <div style="display:flex;gap:10px;margin-top:14px;">
+                <button class="btn btn-primary btn-sm" onclick="submitReturn()">Submit Request</button>
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('returnForm').style.display='none'">Cancel</button>
+              </div>
+            </div>
+            <div id="returnsList"></div>
+          </div>
+        </div>
+
+        <!-- Spending Analytics -->
+        <div id="sec-analytics" class="dash-section">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-label">Total Spent</div><div class="stat-val" id="anaTotal">—</div></div>
+            <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-val" id="anaMonth">—</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-val" id="anaAvg">—</div></div>
+          </div>
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:16px;">Spending by Category</h3>
+            <div id="categoryBreakdown"></div>
+          </div>
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:16px;">Recent Purchases</h3>
+            <div id="recentPurchasesList"></div>
           </div>
         </div>
 
         <!-- Notifications -->
         <div id="sec-notifs" class="dash-section">
-          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+          <div class="section-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
               <h3 style="font-weight:800;">Notifications</h3>
-              <button class="btn btn-ghost btn-sm" onclick="markAllReadDash()">Mark all read</button>
+              <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
             </div>
             <div id="notifsContent"></div>
+          </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div id="sec-settings" class="dash-section">
+          <div class="section-card">
+            <h3 style="font-weight:800;margin-bottom:20px;">Account Settings</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="settName" class="form-control" readonly></div>
+              <div class="form-group"><label class="form-label">Roll Number</label><input type="text" id="settRoll" class="form-control" readonly></div>
+              <div class="form-group"><label class="form-label">Branch</label><input type="text" id="settBranch" class="form-control" readonly></div>
+              <div class="form-group"><label class="form-label">Year</label><input type="text" id="settYear" class="form-control" readonly></div>
+              <div class="form-group"><label class="form-label">Phone</label><input type="text" id="settPhone" class="form-control" readonly></div>
+              <div class="form-group"><label class="form-label">Role</label><input type="text" id="settRole" class="form-control" readonly></div>
+            </div>
+            <div style="background:rgba(99,102,241,0.06);border:1.5px solid rgba(99,102,241,0.2);border-radius:12px;padding:14px;margin-top:8px;font-size:0.88rem;">
+              <i class="fas fa-info-circle" style="color:var(--accent-primary);"></i> To update your profile details, please contact admin at the campus office.
+            </div>
           </div>
         </div>
       </div>
@@ -113,102 +213,299 @@
 <script src="shared/js/api.js"></script>
 <script src="shared/js/effects.js"></script>
 <script>
-  let currentUser = null;
-  let orders = [];
-  let notifs = [];
+let currentUser = null;
+let allOrders = [];
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    currentUser = Auth.requireAuth(['buyer']);
-    if (!currentUser) return;
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = Auth.requireAuth(['buyer']);
+  if (!currentUser) return;
 
-    document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&rounded=true&size=128`;
-    document.getElementById('profileName').textContent = currentUser.name;
-    document.getElementById('profileInfo').textContent = `${currentUser.branch} • ${currentUser.year}${currentUser.year==='1'?'st':currentUser.year==='2'?'nd':currentUser.year==='3'?'rd':'th'} Year`;
-    document.getElementById('dashTitle').textContent = `Welcome, ${currentUser.name.split(' ')[0]}! 👋`;
+  document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&rounded=true&size=128`;
+  document.getElementById('profileName').textContent = currentUser.name;
+  document.getElementById('profileInfo').textContent = `${currentUser.branch} • Year ${currentUser.year}`;
+  document.getElementById('dashTitle').textContent = `Hello, ${currentUser.name.split(' ')[0]}! 👋`;
 
-    await loadOrders();
-    await loadNotifications();
-    loadWishlistStats();
-    loadCartStats();
-  });
+  // Fill settings
+  document.getElementById('settName').value = currentUser.name;
+  document.getElementById('settRoll').value = currentUser.rollNumber;
+  document.getElementById('settBranch').value = currentUser.branch;
+  document.getElementById('settYear').value = `Year ${currentUser.year}`;
+  document.getElementById('settPhone').value = currentUser.phone;
+  document.getElementById('settRole').value = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
 
-  async function loadOrders() {
-    try {
-      orders = await API.get('/orders/mine');
-      document.getElementById('statOrders').textContent = orders.length;
-      renderOrdersTable('recentOrdersTable', orders.slice(0, 5));
-      renderOrdersTable('ordersTableFull', orders);
-    } catch (e) {
-      document.getElementById('statOrders').textContent = '0';
-    }
+  await Promise.all([loadOrders(), loadNotifications(), loadAddresses(), loadReturns()]);
+});
+
+async function loadOrders() {
+  try {
+    allOrders = await API.get('/orders/mine');
+    const totalSpent = allOrders.reduce((s, o) => s + o.total_paid, 0);
+    const wishlist = JSON.parse(localStorage.getItem('vm_wishlist')||'[]');
+    document.getElementById('statOrders').textContent = allOrders.length;
+    document.getElementById('statSpent').textContent = `₹${totalSpent.toLocaleString()}`;
+    document.getElementById('statWishlist').textContent = wishlist.length;
+
+    // Analytics stats
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthOrders = allOrders.filter(o => new Date(o.ordered_at) >= monthStart);
+    document.getElementById('anaTotal').textContent = `₹${totalSpent.toLocaleString()}`;
+    document.getElementById('anaMonth').textContent = `₹${monthOrders.reduce((s,o)=>s+o.total_paid,0).toLocaleString()}`;
+    document.getElementById('anaAvg').textContent = allOrders.length ? `₹${Math.round(totalSpent/allOrders.length).toLocaleString()}` : '₹0';
+
+    // Category breakdown
+    const catMap = {};
+    allOrders.forEach(o => {
+      const cat = o.product_title?.split(' ')[0] || 'Other';
+      catMap[cat] = (catMap[cat]||0) + o.total_paid;
+    });
+    document.getElementById('categoryBreakdown').innerHTML = Object.entries(catMap).length
+      ? `<div style="display:flex;flex-direction:column;gap:10px;">${Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.88rem;font-weight:600;"><span>${k}</span><span>₹${v.toLocaleString()}</span></div>
+            <div style="height:6px;background:var(--border-color);border-radius:3px;"><div style="height:100%;width:${Math.round(v/totalSpent*100)}%;background:var(--gradient-accent);border-radius:3px;transition:width 1s;"></div></div>
+          </div>`).join('')}</div>`
+      : '<p style="color:var(--text-muted);font-size:0.88rem;">Make your first order to see analytics</p>';
+
+    // Fill tracking select
+    const select = document.getElementById('trackOrderSelect');
+    allOrders.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = `${o.product_title} • ${o.id.substring(0,8).toUpperCase()}`;
+      select.appendChild(opt);
+    });
+
+    renderOrdersTable(allOrders.slice(0,5), 'recentOrders');
+    renderOrdersTable(allOrders, 'ordersTable');
+    renderOrdersTable(allOrders.slice(0,5), 'recentPurchasesList');
+    renderWishlist();
+  } catch(e) {
+    document.getElementById('statOrders').textContent = '0';
+    document.getElementById('statSpent').textContent = '₹0';
   }
+}
 
-  function renderOrdersTable(containerId, orderList) {
-    const el = document.getElementById(containerId);
-    if (!orderList.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No orders yet. <a href="shop.html" style="color:var(--accent-primary);">Browse products</a></p>'; return; }
-    el.innerHTML = `<div style="overflow-x:auto;"><table class="order-table">
-      <thead><tr><th>Product</th><th>Price</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>${orderList.map(o => `
-        <tr>
-          <td><div style="font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.product_title}</div><div style="font-size:0.75rem;color:var(--text-muted);">From: ${o.seller_name}</div></td>
-          <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
-          <td><span style="font-size:0.8rem;font-weight:700;">${o.payment_method}</span></td>
-          <td><span class="status-badge status-${o.status.replace(/ /g,'-')}">${o.status.replace(/-/g,' ')}</span></td>
-          <td style="font-size:0.82rem;color:var(--text-muted);">${new Date(o.ordered_at).toLocaleDateString()}</td>
-        </tr>`).join('')}
-      </tbody></table></div>`;
-  }
+function renderOrdersTable(orders, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!orders.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No orders yet. <a href="shop.html" style="color:var(--accent-primary);">Start shopping!</a></p>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="order-table">
+    <thead><tr><th>Product</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+    <tbody>${orders.map(o => `
+      <tr>
+        <td style="min-width:160px;font-weight:700;font-size:0.88rem;">${o.product_title||'—'}</td>
+        <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
+        <td style="font-size:0.82rem;font-weight:700;">${o.payment_method}</td>
+        <td><span class="status-badge status-${(o.status||'pending').replace(/ /g,'-')}">${(o.status||'pending').replace(/-/g,' ')}</span></td>
+        <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(o.ordered_at).toLocaleDateString()}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="trackOrder('${o.id}')"><i class="fas fa-map-marker-alt"></i></button></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
 
-  async function loadNotifications() {
-    try {
-      notifs = await API.get('/notifications');
-      const unread = notifs.filter(n => !n.is_read).length;
-      const badge = document.getElementById('navNotifBadge');
-      badge.textContent = unread;
-      badge.style.display = unread ? 'inline' : 'none';
-      renderNotifs();
-    } catch {}
-  }
+function trackOrder(orderId) {
+  document.getElementById('trackOrderSelect').value = orderId;
+  renderTracking();
+  showSection('tracking', document.querySelector('.dash-nav-item:nth-child(3)'));
+}
 
-  function renderNotifs() {
+function renderTracking() {
+  const orderId = document.getElementById('trackOrderSelect').value;
+  if (!orderId) { document.getElementById('trackingContent').innerHTML = ''; return; }
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+  const steps = [
+    { key: 'pending', label: 'Order Placed', icon: '📋', desc: 'Your order has been placed and is waiting for seller' },
+    { key: 'seller-contacted', label: 'Seller Contacted', icon: '📞', desc: 'Admin has reached out to the seller about your order' },
+    { key: 'seller-delivered-to-admin', label: 'At Admin', icon: '🏢', desc: 'Seller has handed the product to admin' },
+    { key: 'buyer-notified', label: 'You\'re Notified', icon: '🔔', desc: 'Admin has notified you to collect the product' },
+    { key: 'completed', label: 'Completed', icon: '✅', desc: 'Order successfully completed!' }
+  ];
+  const statusMap = { 'pending': 0, 'seller contacted': 1, 'seller-contacted': 1, 'seller delivered to admin': 2, 'seller-delivered-to-admin': 2, 'buyer notified': 3, 'buyer-notified': 3, 'completed': 4 };
+  const currentIdx = statusMap[order.status] ?? 0;
+  document.getElementById('trackingContent').innerHTML = `
+    <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:20px;font-size:0.88rem;">
+      <div><strong>Order ID:</strong> ${order.id}</div>
+      <div><strong>Product:</strong> ${order.product_title}</div>
+      <div><strong>Amount:</strong> ₹${order.total_paid.toLocaleString()} (${order.payment_method})</div>
+    </div>
+    <div class="tracking-timeline">
+      ${steps.map((step, i) => `
+        <div class="timeline-step ${i < currentIdx ? 'done' : i === currentIdx ? 'current' : ''}">
+          <div class="timeline-dot">${i < currentIdx ? '✓' : step.icon}</div>
+          <div class="timeline-info">
+            <div class="step-label">${step.label}</div>
+            <div class="step-desc">${step.desc}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderWishlist() {
+  const wishlist = JSON.parse(localStorage.getItem('vm_wishlist') || '[]');
+  const el = document.getElementById('wishlistContent');
+  if (!el) return;
+  if (!wishlist.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-heart" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:12px;"></i>No wishlisted items. <a href="shop.html" style="color:var(--accent-primary);">Browse products</a></div>'; return; }
+  el.innerHTML = wishlist.map(item => `
+    <div style="display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-color);align-items:center;">
+      <img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;" loading="lazy">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.9rem;">${item.title}</div>
+        <div style="color:var(--accent-primary);font-weight:800;margin-top:2px;">₹${(item.price||0).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <a href="shop.html" class="btn btn-primary btn-sm"><i class="fas fa-cart-plus"></i> Buy</a>
+        <button class="btn btn-ghost btn-sm" onclick="removeWishlistItem(${item.id})" style="color:var(--accent-red);"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function removeWishlistItem(id) {
+  let list = JSON.parse(localStorage.getItem('vm_wishlist')||'[]');
+  list = list.filter(w => w.id !== id);
+  localStorage.setItem('vm_wishlist', JSON.stringify(list));
+  document.getElementById('statWishlist').textContent = list.length;
+  renderWishlist();
+  showToast('Removed from wishlist', 'info');
+}
+
+// ─── Addresses ────────────────────────────────────────────────
+async function loadAddresses() {
+  try {
+    const addresses = await API.get('/addresses');
+    renderAddresses(addresses);
+  } catch{}
+}
+
+function renderAddresses(addresses) {
+  const el = document.getElementById('addressesList');
+  if (!el) return;
+  if (!addresses.length) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:30px;">No saved addresses. Add one!</p>'; return; }
+  el.innerHTML = addresses.map(a => `
+    <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;">
+      <div style="font-size:1.4rem;flex-shrink:0;">📍</div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-weight:800;font-size:0.92rem;">${a.label}</span>
+          ${a.is_default ? '<span class="badge badge-approved">Default</span>' : ''}
+        </div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);">${[a.hostel, `Room ${a.room}`, a.landmark].filter(Boolean).join(' • ')}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        ${!a.is_default ? `<button class="btn btn-ghost btn-sm" onclick="setDefaultAddress(${a.id})">Set Default</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="deleteAddress(${a.id})" style="color:var(--accent-red);"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function showAddressForm() { document.getElementById('addressForm').style.display = 'block'; document.getElementById('addrLabel').focus(); }
+
+async function saveAddress() {
+  const label = document.getElementById('addrLabel').value.trim();
+  if (!label) { showToast('Label is required', 'error'); return; }
+  try {
+    await API.post('/addresses', {
+      label, hostel: document.getElementById('addrHostel').value.trim(),
+      room: document.getElementById('addrRoom').value.trim(),
+      landmark: document.getElementById('addrLandmark').value.trim(),
+      isDefault: document.getElementById('addrDefault').checked
+    });
+    showToast('Address saved! 📍', 'success');
+    document.getElementById('addressForm').style.display = 'none';
+    document.getElementById('addrLabel').value = '';
+    document.getElementById('addrHostel').value = '';
+    document.getElementById('addrRoom').value = '';
+    document.getElementById('addrLandmark').value = '';
+    document.getElementById('addrDefault').checked = false;
+    await loadAddresses();
+  } catch(err) { showToast(err.message, 'error'); }
+}
+
+async function deleteAddress(id) {
+  if (!confirm('Delete this address?')) return;
+  try { await API.delete(`/addresses/${id}`); await loadAddresses(); showToast('Address deleted', 'info'); } catch(err) { showToast(err.message,'error'); }
+}
+
+async function setDefaultAddress(id) {
+  try { await API.put(`/addresses/${id}/default`, {}); await loadAddresses(); showToast('Default address updated', 'success'); } catch(err) { showToast(err.message,'error'); }
+}
+
+// ─── Returns ──────────────────────────────────────────────────
+async function loadReturns() {
+  try {
+    const returns = await API.get('/returns/mine');
+    renderReturns(returns);
+  } catch{}
+}
+
+function renderReturns(returns) {
+  const el = document.getElementById('returnsList');
+  if (!el) return;
+  if (!returns.length) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:30px;">No return requests yet.</p>'; return; }
+  el.innerHTML = returns.map(r => `
+    <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-weight:700;font-size:0.9rem;">Order: ${r.order_id.substring(0,8).toUpperCase()}</div>
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px;">${r.reason}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${new Date(r.created_at).toLocaleDateString()}</div>
+        </div>
+        <span class="status-badge status-${r.status}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function showReturnForm() {
+  document.getElementById('returnForm').style.display = 'block';
+  // Pre-fill if there's only one order
+  if (allOrders.length === 1) document.getElementById('returnOrderId').value = allOrders[0].id;
+  document.getElementById('returnOrderId').focus();
+}
+
+async function submitReturn() {
+  const orderId = document.getElementById('returnOrderId').value.trim();
+  const reason = document.getElementById('returnReason').value.trim();
+  if (!orderId || !reason) { showToast('Fill all fields', 'error'); return; }
+  try {
+    await API.post('/returns', { orderId, reason });
+    showToast('Return request submitted! ↩️', 'success');
+    document.getElementById('returnForm').style.display = 'none';
+    document.getElementById('returnOrderId').value = '';
+    document.getElementById('returnReason').value = '';
+    await loadReturns();
+  } catch(err) { showToast(err.message, 'error'); }
+}
+
+// ─── Notifications ────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const notifs = await API.get('/notifications');
+    const unread = notifs.filter(n => !n.is_read).length;
+    const badge = document.getElementById('navNotifBadge');
+    badge.textContent = unread; badge.style.display = unread ? 'inline' : 'none';
     const el = document.getElementById('notifsContent');
-    if (!notifs.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No notifications yet</p>'; return; }
+    if (!notifs.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No notifications</p>'; return; }
     el.innerHTML = notifs.map(n => `
-      <div style="padding:16px;border-bottom:1px solid var(--border-color);${!n.is_read ? 'border-left:3px solid var(--accent-primary);background:rgba(99,102,241,0.03);' : ''}">
-        <div style="font-weight:700;font-size:0.9rem;">${n.title}</div>
-        <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:2px;">${n.message}</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">${new Date(n.created_at).toLocaleString()}</div>
+      <div style="padding:14px;border-bottom:1px solid var(--border-color);${!n.is_read?'border-left:3px solid var(--accent-primary);background:rgba(99,102,241,0.03);':''}">
+        <div style="font-weight:700;font-size:0.88rem;">${n.title}</div>
+        <div style="color:var(--text-secondary);font-size:0.83rem;margin-top:2px;">${n.message}</div>
+        <div style="font-size:0.74rem;color:var(--text-muted);margin-top:5px;">${new Date(n.created_at).toLocaleString()}</div>
       </div>`).join('');
-  }
+  } catch{}
+}
 
-  async function markAllReadDash() {
-    try { await API.put('/notifications/read', {}); await loadNotifications(); showToast('All notifications marked as read', 'success'); } catch {}
-  }
+async function markAllRead() {
+  try { await API.put('/notifications/read', {}); await loadNotifications(); showToast('Marked as read', 'success'); } catch{}
+}
 
-  function loadWishlistStats() {
-    const wl = JSON.parse(localStorage.getItem('vm_wishlist') || '[]');
-    document.getElementById('statWishlist').textContent = wl.length;
-    const el = document.getElementById('wishlistContent');
-    if (!wl.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">Wishlist is empty. <a href="shop.html" style="color:var(--accent-primary);">Browse products</a></p>'; return; }
-    el.innerHTML = wl.map(item => `
-      <div style="display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-color);align-items:center;">
-        <img src="${item.image_url}" style="width:64px;height:64px;object-fit:cover;border-radius:12px;">
-        <div style="flex:1;"><div style="font-weight:700;">${item.title}</div><div style="color:var(--accent-primary);font-weight:800;margin-top:4px;">₹${item.price.toLocaleString()}</div></div>
-        <a href="shop.html" class="btn btn-primary btn-sm">View in Shop</a>
-      </div>`).join('');
-  }
-
-  function loadCartStats() {
-    const cart = JSON.parse(localStorage.getItem('vm_cart') || '[]');
-    document.getElementById('statCart').textContent = cart.length;
-  }
-
-  function showSection(id) {
-    document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('sec-' + id).classList.add('active');
-    event.currentTarget.classList.add('active');
-  }
+function showSection(id, navItem) {
+  document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  if (navItem) navItem.classList.add('active');
+  else { const items = document.querySelectorAll('.dash-nav-item'); items.forEach(item => { if (item.getAttribute('onclick')?.includes(`'${id}'`)) item.classList.add('active'); }); }
+}
 </script>
 </body>
 </html>

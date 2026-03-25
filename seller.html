@@ -23,7 +23,8 @@
   </style>
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+<canvas id="particleCanvas"></canvas>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT <span style="color:var(--accent-primary)">Mart</span></div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
 
 <nav class="navbar">
   <div class="navbar-inner container">
@@ -56,7 +57,9 @@
         <div class="dash-nav-item active" onclick="showSection('overview')"><i class="fas fa-home"></i> Overview</div>
         <div class="dash-nav-item" onclick="showSection('products')"><i class="fas fa-box"></i> My Products</div>
         <div class="dash-nav-item" onclick="showSection('orders')"><i class="fas fa-shopping-bag"></i> Orders Received</div>
+        <div class="dash-nav-item" onclick="showSection('alerts')"><i class="fas fa-exclamation-triangle"></i> Inventory Alerts</div>
         <div class="dash-nav-item" onclick="showSection('list')"><i class="fas fa-plus-circle"></i> List Product</div>
+        <div class="dash-nav-item" onclick="showSection('earnings')"><i class="fas fa-chart-line"></i> Earnings</div>
         <div class="dash-nav-item" onclick="showSection('notifs')"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
         <div class="dash-nav-item" style="margin-top:12px;color:var(--accent-red);" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
       </div>
@@ -108,7 +111,7 @@
             <form id="sellForm" onsubmit="submitProduct(event)">
               <div class="form-group"><label class="form-label required">Product Title</label><input type="text" id="pTitle" class="form-control" placeholder="e.g., HP Laptop — Like New" required></div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="furniture">Furniture</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
+                <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="instruments">Instruments</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
                 <div class="form-group"><label class="form-label required">Condition</label><select id="pCondition" class="form-control" required><option value="New">New (Unused)</option><option value="Like New">Like New</option><option value="Good">Good</option><option value="Fair">Fair</option></select></div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
@@ -117,13 +120,38 @@
                 <div class="form-group"><label class="form-label required">Quantity</label><input type="number" id="pQty" class="form-control" value="1" min="1" required></div>
               </div>
               <div class="form-group"><label class="form-label required">Description</label><textarea id="pDesc" class="form-control" rows="4" maxlength="200" placeholder="Describe the item clearly..." required></textarea><div id="charCount" style="font-size:0.75rem;color:var(--text-muted);text-align:right;margin-top:4px;">0 / 200</div></div>
-              <div class="form-group"><label class="form-label required">Image URL</label><input type="url" id="pImage" class="form-control" placeholder="https://images.unsplash.com/..." required><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Tip: Use Unsplash.com and copy the image URL</p></div>
+              <div class="form-group"><label class="form-label required">Product Images (Up to 5)</label><input type="file" id="pImageFile" accept="image/*" multiple class="form-control" style="padding:10px;" required><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Select up to 5 clear pictures (Max 5MB each)</p></div>
               <div class="form-group"><label class="form-label">Location on Campus</label><input type="text" id="pLocation" class="form-control" placeholder="North Campus, Hostel A..."></div>
               <div style="background:rgba(245,158,11,0.08);border:1.5px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px;margin-bottom:20px;font-size:0.85rem;">
                 <i class="fas fa-info-circle" style="color:var(--accent-gold);"></i> <strong>Note:</strong> Admin may charge a listing fee and service fee upon approval. A ₹15 listing fee is deducted per sale.
               </div>
               <button type="submit" class="btn btn-primary btn-full btn-lg" id="sellBtn"><i class="fas fa-paper-plane"></i> Submit for Admin Approval</button>
             </form>
+          </div>
+        </div>
+
+        <!-- Inventory Alerts -->
+        <div id="sec-alerts" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h3 style="font-weight:800;">⚠️ Low Stock Alerts</h3>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:16px;">Products with 5 or fewer items remaining.</p>
+            <div id="alertsList"></div>
+          </div>
+        </div>
+
+        <!-- Earnings -->
+        <div id="sec-earnings" class="dash-section">
+          <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:20px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <h3 style="font-weight:800;">💰 My Earnings</h3>
+            </div>
+            <div style="display:flex;gap:20px;margin-bottom:24px;">
+              <div class="stat-card" style="flex:1;"><div class="stat-label">Total Earned</div><div class="stat-val" id="earnTotal">—</div></div>
+              <div class="stat-card" style="flex:1;"><div class="stat-label">Pending Payout</div><div class="stat-val" id="earnPend">—</div></div>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.9rem;text-align:center;">Earnings data is generated from completed orders minus admin fees.</p>
           </div>
         </div>
 
@@ -160,6 +188,32 @@
     // Char count for description
     document.getElementById('pDesc').addEventListener('input', function() {
       document.getElementById('charCount').textContent = `${this.value.length} / 200`;
+    });
+
+    let uploadedImagesBase64 = [];
+    document.getElementById('pImageFile').addEventListener('change', async function(e) {
+      const files = Array.from(e.target.files);
+      if (files.length > 5) {
+        showToast('Maximum 5 images allowed', 'error');
+        this.value = '';
+        uploadedImagesBase64 = [];
+        return;
+      }
+      uploadedImagesBase64 = [];
+      for (const file of files) {
+        if (file.size > 5 * 1024 * 1024) { 
+          showToast('Each image must be under 5MB', 'error'); 
+          this.value = ''; 
+          uploadedImagesBase64 = []; 
+          return; 
+        }
+        const dataUrl = await new Promise(r => {
+          const reader = new FileReader();
+          reader.onload = evt => r(evt.target.result);
+          reader.readAsDataURL(file);
+        });
+        uploadedImagesBase64.push(dataUrl);
+      }
     });
 
     await Promise.all([loadProducts(), loadOrders(), loadNotifications()]);
@@ -246,6 +300,8 @@
     const btn = document.getElementById('sellBtn');
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     try {
+      if (!uploadedImagesBase64 || uploadedImagesBase64.length === 0) throw new Error('Please select at least one image file');
+
       await API.post('/products', {
         title: document.getElementById('pTitle').value,
         category: document.getElementById('pCategory').value,
@@ -254,10 +310,12 @@
         originalPrice: document.getElementById('pOriginal').value || null,
         quantity: parseInt(document.getElementById('pQty').value),
         description: document.getElementById('pDesc').value,
-        imageUrl: document.getElementById('pImage').value,
+        imageUrls: uploadedImagesBase64,
         location: document.getElementById('pLocation').value
       });
       showToast('Product submitted for admin approval! 🎉', 'success');
+      document.getElementById('sellForm').reset();
+      uploadedImagesBase64 = [];
       document.getElementById('sellForm').reset();
       document.getElementById('charCount').textContent = '0 / 200';
       showSection('products');
@@ -273,6 +331,31 @@
     document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('sec-' + id).classList.add('active');
     if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    if (id === 'alerts') loadLowStockAlerts();
+  }
+
+  async function loadLowStockAlerts() {
+    try {
+      const products = await API.get('/seller/products');
+      const lowStock = products.filter(p => p.quantity <= 5);
+      const el = document.getElementById('alertsList');
+      if (!el) return;
+      if (!lowStock.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--accent-green);"><i class="fas fa-check-circle" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>All products have healthy stock levels!</div>';
+        return;
+      }
+      el.innerHTML = lowStock.map(p => `
+        <div style="display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border-color);">
+          <img src="${p.image_url}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.9rem;">${p.title}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">₹${p.price.toLocaleString()} • ${p.category}</div>
+          </div>
+          ${p.quantity === 0
+            ? '<span class="low-stock-badge">❌ Out of Stock</span>'
+            : `<span class="low-stock-badge">⚠️ Only ${p.quantity} left</span>`}
+        </div>`).join('');
+    } catch{}
   }
 </script>
 </body>

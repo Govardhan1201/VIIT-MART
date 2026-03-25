@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Product — VIIT Mart</title>
+  <meta name="description" id="pageDesc" content="Campus marketplace product">
+  <meta property="og:type" content="product">
+  <link rel="stylesheet" href="shared/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script id="productSchema" type="application/ld+json">{}</script>
+  <style>
+    .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+    @media (max-width: 768px) { .product-layout { grid-template-columns: 1fr; } }
+    .thumb-strip { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+
+<nav class="navbar">
+  <div class="navbar-inner container">
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <div style="flex:1;"></div>
+    <div class="nav-actions">
+      <button class="dark-toggle" id="darkModeToggle"></button>
+      <a href="shop.html" class="btn btn-ghost btn-sm"><i class="fas fa-store"></i> All Products</a>
+    </div>
+  </div>
+</nav>
+
+<main class="page-pad" style="padding-bottom:80px;">
+  <div class="container" style="padding-top:24px;">
+    <!-- Breadcrumb -->
+    <nav style="margin-bottom:24px;font-size:0.85rem;color:var(--text-muted);">
+      <a href="/" style="color:var(--text-muted);text-decoration:none;">Home</a>
+      <span style="margin:0 8px;">/</span>
+      <a href="/shop" style="color:var(--text-muted);text-decoration:none;">Shop</a>
+      <span style="margin:0 8px;">/</span>
+      <span id="breadcrumbTitle" style="color:var(--text-primary);">Loading...</span>
+    </nav>
+
+    <div id="productLoading" style="text-align:center;padding:80px;color:var(--text-muted);">
+      <div style="font-size:3rem;margin-bottom:12px;">⏳</div>
+      <p>Loading product...</p>
+    </div>
+
+    <div id="productMain" style="display:none;">
+      <div class="product-layout">
+        <!-- Image Side -->
+        <div data-reveal="left">
+          <div id="mainImgWrap" class="zoom-wrap">
+            <img id="mainImg" src="" alt="" style="height:380px;object-fit:cover;width:100%;">
+            <span class="zoom-badge" id="zoomBadge">🔍 Hover to Zoom</span>
+          </div>
+          <div class="thumb-strip" id="thumbStrip"></div>
+          <div id="spinBtn" style="display:none;margin-top:10px;">
+            <button class="btn btn-ghost" style="width:100%;" onclick="toggleSpin()">
+              <i class="fas fa-sync" id="spinIcon"></i> Toggle 360° Spin
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Side -->
+        <div data-reveal>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;" id="badgeRow"></div>
+          <h1 id="productTitle" style="font-size:1.9rem;font-weight:800;letter-spacing:-0.5px;line-height:1.3;margin-bottom:16px;"></h1>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;" id="priceRow"></div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;" id="ratingRow">
+            <span id="stars" style="color:#f59e0b;"></span>
+            <span id="ratingNum" style="font-weight:800;font-size:0.9rem;"></span>
+            <span id="reviewCount" style="color:var(--text-muted);font-size:0.82rem;"></span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--bg-primary);border-radius:14px;margin-bottom:20px;font-size:0.9rem;" id="detailsBox"></div>
+
+          <div style="margin-bottom:20px;" id="descBox"></div>
+
+          <div style="padding:12px 16px;background:rgba(99,102,241,0.06);border:1.5px solid rgba(99,102,241,0.2);border-radius:12px;margin-bottom:20px;font-size:0.88rem;" id="sellerBox"></div>
+
+          <div id="actionBtns" style="display:flex;gap:10px;margin-bottom:0;"></div>
+        </div>
+      </div>
+
+      <!-- Reviews Section -->
+      <section style="margin-top:48px;padding-top:32px;border-top:1px solid var(--border-color);" data-reveal>
+        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:24px;">⭐ Reviews & Ratings</h2>
+        <div id="reviewsList"><p style="color:var(--text-muted);">Loading reviews...</p></div>
+        <div id="reviewForm" style="margin-top:24px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:16px;padding:20px;"></div>
+      </section>
+
+      <!-- Related Products -->
+      <section style="margin-top:48px;padding-top:32px;border-top:1px solid var(--border-color);" data-reveal>
+        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:24px;">📦 Related Products</h2>
+        <div class="related-strip" id="relatedGrid"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+<script src="shared/js/auth.js"></script>
+<script src="shared/js/api.js"></script>
+<script src="shared/js/effects.js"></script>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const productId = urlParams.get('id');
+let currentProduct = null;
+let currentUser = null;
+let isSpinning = false;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = Auth.getUser();
+  if (!productId) { window.location.href = '/shop'; return; }
+  try {
+    const products = await API.get('/products?status=approved');
+    currentProduct = products.find(p => p.id === parseInt(productId));
+    if (!currentProduct) { document.getElementById('productLoading').innerHTML = '<p>Product not found. <a href="/shop" style="color:var(--accent-primary)">Browse Shop</a></p>'; return; }
+    renderProduct(currentProduct);
+    loadReviews();
+    loadRelated();
+  } catch(e) {
+    document.getElementById('productLoading').innerHTML = '<p>Failed to load product. <a href="/shop" style="color:var(--accent-primary)">Go to Shop</a></p>';
+  }
+});
+
+function renderProduct(p) {
+  const wishlist = JSON.parse(localStorage.getItem('vm_wishlist')||'[]');
+  const inWl = wishlist.some(w => w.id === p.id);
+  const disc = p.original_price ? Math.round((1-p.price/p.original_price)*100) : 0;
+  const is360 = p.category === 'electronics' && p.price >= 5000;
+  const inStock = p.quantity > 0;
+
+  // SEO
+  document.getElementById('pageTitle').textContent = `${p.title} — VIIT Mart`;
+  document.getElementById('pageDesc').content = `${p.title} for sale on VIIT Mart. ₹${p.price.toLocaleString()}. ${p.condition} condition. ${p.description}`;
+  document.getElementById('breadcrumbTitle').textContent = p.title.substring(0,40);
+  document.getElementById('productSchema').textContent = JSON.stringify({
+    "@context":"https://schema.org","@type":"Product","name":p.title,"description":p.description,
+    "image":p.image_url,"sku":String(p.id),"brand":{"@type":"Brand","name":"VIIT Mart"},
+    "offers":{"@type":"Offer","priceCurrency":"INR","price":p.price,"availability":inStock?"https://schema.org/InStock":"https://schema.org/OutOfStock"},
+    "aggregateRating":{"@type":"AggregateRating","ratingValue":p.rating||4.5,"reviewCount":1}
+  });
+
+  // Render main image
+  const mainImg = document.getElementById('mainImg');
+  mainImg.src = p.image_url; mainImg.alt = p.title;
+  if (is360) {
+    document.getElementById('mainImgWrap').classList.remove('zoom-wrap');
+    document.getElementById('mainImgWrap').classList.add('spin-360-wrap');
+    document.getElementById('zoomBadge').className = 'spin-360-badge';
+    document.getElementById('zoomBadge').innerHTML = '↺ 360°';
+    document.getElementById('spinBtn').style.display = 'block';
+  }
+
+  // Badge row
+  document.getElementById('badgeRow').innerHTML = `
+    ${p.eco ? '<span class="badge badge-eco">🌿 Eco-Friendly</span>' : ''}
+    <span class="badge badge-condition">${p.condition}</span>
+    ${!inStock ? '<span class="low-stock-badge">❌ Out of Stock</span>' : p.quantity <= 2 ? `<span class="low-stock-badge">⚠️ Only ${p.quantity} left</span>` : '<span style="color:var(--accent-green);font-weight:700;font-size:0.82rem;">✅ In Stock</span>'}`;
+
+  // Price row
+  document.getElementById('priceRow').innerHTML = `
+    <span style="font-size:2.5rem;font-weight:900;color:var(--accent-primary);">₹${p.price.toLocaleString()}</span>
+    ${p.original_price ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:1.1rem;">₹${p.original_price.toLocaleString()}</span><span style="background:var(--accent-red);color:white;padding:5px 12px;border-radius:10px;font-size:0.85rem;font-weight:800;">${disc}% OFF</span>` : ''}`;
+
+  // Rating row
+  document.getElementById('stars').textContent = '★'.repeat(Math.round(p.rating||4.5)) + '☆'.repeat(5-Math.round(p.rating||4.5));
+  document.getElementById('ratingNum').textContent = (p.rating||4.5).toFixed(1);
+
+  // Details
+  document.getElementById('detailsBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Category</span><strong>${p.category.charAt(0).toUpperCase()+p.category.slice(1)}</strong></div>
+    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Condition</span><strong>${p.condition}</strong></div>
+    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Location</span><strong>${p.location||'Campus'}</strong></div>
+    <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Listed</span><strong>${new Date(p.created_at).toLocaleDateString()}</strong></div>`;
+
+  // Description
+  document.getElementById('descBox').innerHTML = `<div style="font-weight:700;margin-bottom:8px;">Description</div><p style="color:var(--text-secondary);line-height:1.7;font-size:0.92rem;">${p.description}</p>`;
+
+  // Seller
+  document.getElementById('sellerBox').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent-primary);"></i> <strong>Seller:</strong> ${currentUser ? p.seller_name+' (Verified)' : 'Verified VIIT Student — <a href="/login" style="color:var(--accent-primary);">Login to view contact</a>'}`;
+
+  // Actions
+  document.getElementById('actionBtns').innerHTML = `
+    <button class="btn btn-primary" style="flex:1;" onclick="addToCart()" ${!inStock?'disabled':''}><i class="fas fa-cart-plus"></i> Add to Cart</button>
+    <button class="btn btn-gold" style="flex:1;" onclick="buyNow()" ${!inStock?'disabled':''}><i class="fas fa-bolt"></i> Buy Now</button>
+    <button class="wishlist-btn ${inWl?'active':''}" id="wlBtn" onclick="toggleWishlist()" style="width:48px;height:48px;border-radius:14px;flex-shrink:0;">
+      <i class="${inWl?'fas':'far'} fa-heart wi-icon" id="wlIcon"></i>
+    </button>`;
+
+  document.getElementById('productLoading').style.display = 'none';
+  document.getElementById('productMain').style.display = 'block';
+}
+
+function toggleSpin() {
+  const img = document.getElementById('mainImg');
+  isSpinning = !isSpinning;
+  if (isSpinning) { img.classList.add('spinning'); document.getElementById('spinIcon').className = 'fas fa-stop'; }
+  else { img.classList.remove('spinning'); document.getElementById('spinIcon').className = 'fas fa-sync'; }
+}
+
+function addToCart() {
+  if (!currentUser) { showToast('Login to add to cart', 'error'); window.location.href='/login'; return; }
+  let cart = JSON.parse(localStorage.getItem('vm_cart')||'[]');
+  if (!cart.find(c => c.id === currentProduct.id)) { cart.push(currentProduct); localStorage.setItem('vm_cart', JSON.stringify(cart)); }
+  showToast('Added to cart! 🛒', 'success');
+}
+
+function buyNow() {
+  if (!currentUser) { window.location.href='/login'; return; }
+  addToCart();
+  window.location.href='/shop';
+}
+
+function toggleWishlist() {
+  if (!currentUser) { showToast('Login to save to wishlist', 'error'); return; }
+  let wishlist = JSON.parse(localStorage.getItem('vm_wishlist')||'[]');
+  const idx = wishlist.findIndex(w => w.id === currentProduct.id);
+  if (idx > -1) { wishlist.splice(idx, 1); showToast('Removed from wishlist', 'info'); document.getElementById('wlBtn').classList.remove('active'); document.getElementById('wlIcon').className = 'far fa-heart wi-icon'; }
+  else { wishlist.push(currentProduct); showToast('Saved to wishlist! ❤️', 'success'); document.getElementById('wlBtn').classList.add('active'); document.getElementById('wlIcon').className = 'fas fa-heart wi-icon'; }
+  localStorage.setItem('vm_wishlist', JSON.stringify(wishlist));
+}
+
+async function loadReviews() {
+  try {
+    const reviews = await API.get(`/reviews/${productId}`);
+    document.getElementById('reviewCount').textContent = `(${reviews.length} review${reviews.length!==1?'s':''})`;
+    document.getElementById('reviewsList').innerHTML = !reviews.length
+      ? '<p style="color:var(--text-muted);">No reviews yet. Be the first to review!</p>'
+      : reviews.map(r => `<div class="review-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+            <div><div class="review-author">${r.reviewer_name}</div><div class="review-date">${new Date(r.created_at).toLocaleDateString()}</div></div>
+            <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+          </div>
+          ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
+        </div>`).join('');
+    if (currentUser && currentUser.role === 'buyer') {
+      document.getElementById('reviewForm').innerHTML = `
+        <div style="font-weight:800;margin-bottom:14px;">Leave a Review</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-size:0.88rem;color:var(--text-muted);">Rating:</span>
+          <div class="star-input">
+            <input type="radio" name="star" id="s5" value="5"><label for="s5">★</label>
+            <input type="radio" name="star" id="s4" value="4"><label for="s4">★</label>
+            <input type="radio" name="star" id="s3" value="3"><label for="s3">★</label>
+            <input type="radio" name="star" id="s2" value="2"><label for="s2">★</label>
+            <input type="radio" name="star" id="s1" value="1"><label for="s1">★</label>
+          </div>
+        </div>
+        <textarea id="reviewComment" class="form-control" rows="3" placeholder="Share your experience with this product..." style="margin-bottom:12px;"></textarea>
+        <button class="btn btn-primary" onclick="submitReview()"><i class="fas fa-star"></i> Submit Review</button>`;
+    }
+  } catch{}
+}
+
+async function submitReview() {
+  const rating = document.querySelector('input[name="star"]:checked')?.value;
+  const comment = document.getElementById('reviewComment')?.value.trim();
+  if (!rating) { showToast('Select a star rating', 'error'); return; }
+  try {
+    await API.post('/reviews', { productId: parseInt(productId), rating: parseInt(rating), comment });
+    showToast('Review submitted! ⭐', 'success'); loadReviews();
+  } catch(err) { showToast(err.message, 'error'); }
+}
+
+async function loadRelated() {
+  try {
+    const products = await API.get('/products?status=approved');
+    const related = products.filter(p => p.id !== parseInt(productId) && p.category === currentProduct?.category).slice(0, 4);
+    document.getElementById('relatedGrid').innerHTML = !related.length
+      ? '<p style="color:var(--text-muted);">No related products found.</p>'
+      : related.map(p => `
+        <div class="related-card" onclick="window.location.href='/product?id=${p.id}'">
+          <img src="${p.image_url}" alt="${p.title}" loading="lazy">
+          <div class="related-card-body">
+            <div class="related-card-title">${p.title}</div>
+            <div class="related-card-price">₹${p.price.toLocaleString()}</div>
+          </div>
+        </div>`).join('');
+  } catch{}
+}
+</script>
+</body>
+</html>

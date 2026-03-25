@@ -44,12 +44,19 @@
     .cart-overlay.show { display: block; }
     .product-detail-img-wrap { position: relative; overflow: hidden; border-radius: 16px; }
     .product-detail-img-wrap img { width: 100%; height: 280px; object-fit: cover; }
+    .dropdown-panel { position: absolute; top: 52px; right: 0; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 16px; width: 220px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); padding: 8px; z-index: 1000; opacity: 0; visibility: hidden; transform: translateY(10px); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+    .dropdown-panel.show { opacity: 1; visibility: visible; transform: translateY(0); }
+    .dropdown-header { padding: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; }
+    .dropdown-item { padding: 10px 12px; border-radius: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+    .dropdown-item:hover { background: rgba(255,255,255,0.05); }
+    .di-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
     @media (max-width: 900px) { .shop-layout { grid-template-columns: 1fr; } .shop-sidebar { position: static; } .cart-drawer { width: 100%; } }
   </style>
 </head>
 <body>
+<canvas id="particleCanvas"></canvas>
 <!-- Loader -->
-<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT <span style="color:var(--accent-primary)">Mart</span></div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
 
 <!-- Navbar -->
 <nav class="navbar">
@@ -66,7 +73,7 @@
         <i class="far fa-heart"></i>
         <span class="nav-badge" id="wishlistBadge" style="display:none;">0</span>
       </div>
-      <div class="nav-icon-btn" id="notifBtn" onclick="toggleNotifPanel()" title="Notifications" style="display:none; position:relative;">
+      <div class="nav-icon-btn" id="notifBtn" onclick="toggleNotifPanel(event)" title="Notifications" style="display:none; position:relative;">
         <i class="fas fa-bell"></i>
         <span class="nav-badge" id="notifBadge" style="display:none;">0</span>
         <div class="notif-panel" id="notifPanel">
@@ -82,12 +89,11 @@
         <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
         <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
       </div>
-      <div class="nav-icon-btn" id="userAvatarBtn" onclick="toggleUserMenu()" style="display:none;overflow:hidden;padding:0;">
-        <img id="userAvatarImg" src="" alt="User" style="width:100%;height:100%;object-fit:cover;">
-        <div class="dropdown-panel" id="userDropdown" style="top:52px;">
-          <div class="dropdown-header"><div id="ddName" style="font-weight:700;"></div><div id="ddRole" style="font-size:0.8rem;color:var(--text-muted);"></div></div>
+      <div class="nav-icon-btn" id="userAvatarBtn" onclick="toggleUserMenu()" style="display:none;padding:0;cursor:pointer;position:relative;" title="Profile Menu">
+        <img id="userAvatarImg" src="" alt="User" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+        <div class="dropdown-panel" id="userDropdown">
+          <div class="dropdown-header"><div id="ddName" style="font-weight:700;"></div><div id="ddRole" style="font-size:0.8rem;color:var(--text-muted);text-transform:capitalize;"></div></div>
           <div class="dropdown-item" onclick="goDashboard()"><div class="di-icon" style="background:rgba(99,102,241,0.1);">📊</div>Dashboard</div>
-          <div class="dropdown-item" id="dropSellLink" onclick="openSellModal()" style="display:none;"><div class="di-icon" style="background:rgba(16,185,129,0.1);">➕</div>Sell Product</div>
           <div class="dropdown-item" onclick="Auth.logout()"><div class="di-icon" style="background:rgba(239,68,68,0.08);">🚪</div><span style="color:var(--accent-red)">Logout</span></div>
         </div>
       </div>
@@ -117,13 +123,13 @@
   <div class="container" style="padding-top:40px;">
     <!-- Category bar (mobile) -->
     <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:16px;margin-bottom:24px;" id="mobileCatBar">
-      <span class="cat-chip active" onclick="filterCat('all',this)">🔥 All</span>
-      <span class="cat-chip" onclick="filterCat('electronics',this)">💻 Electronics</span>
-      <span class="cat-chip" onclick="filterCat('books',this)">📚 Books</span>
-      <span class="cat-chip" onclick="filterCat('fashion',this)">👕 Fashion</span>
-      <span class="cat-chip" onclick="filterCat('furniture',this)">🪑 Furniture</span>
-      <span class="cat-chip" onclick="filterCat('services',this)">🛠️ Services</span>
-      <span class="cat-chip" onclick="filterCat('sports',this)">⚽ Sports</span>
+      <span class="cat-chip active" onclick="filterCat('all',this)"><i class="fas fa-fire" style="color:#ef4444;"></i> All</span>
+      <span class="cat-chip" onclick="filterCat('electronics',this)"><i class="fas fa-laptop" style="color:#3b82f6;"></i> Electronics</span>
+      <span class="cat-chip" onclick="filterCat('books',this)"><i class="fas fa-book" style="color:#10b981;"></i> Books</span>
+      <span class="cat-chip" onclick="filterCat('fashion',this)"><i class="fas fa-tshirt" style="color:#8b5cf6;"></i> Fashion</span>
+      <span class="cat-chip" onclick="filterCat('instruments',this)"><i class="fas fa-guitar" style="color:#f59e0b;"></i> Instruments</span>
+      <span class="cat-chip" onclick="filterCat('services',this)"><i class="fas fa-tools" style="color:#64748b;"></i> Services</span>
+      <span class="cat-chip" onclick="filterCat('sports',this)"><i class="fas fa-futbol" style="color:#14b8a6;"></i> Sports</span>
     </div>
 
     <div class="shop-layout">
@@ -131,19 +137,28 @@
       <aside class="shop-sidebar" style="display:none;" id="desktopSidebar">
         <div class="sidebar-title">Categories</div>
         <ul class="cat-list" id="catList">
-          <li class="active" onclick="filterCat('all',this)" data-cat="all">🔥 All Products</li>
-          <li onclick="filterCat('electronics',this)" data-cat="electronics">💻 Electronics</li>
-          <li onclick="filterCat('books',this)" data-cat="books">📚 Books &amp; Notes</li>
-          <li onclick="filterCat('fashion',this)" data-cat="fashion">👕 Fashion</li>
-          <li onclick="filterCat('furniture',this)" data-cat="furniture">🪑 Furniture</li>
-          <li onclick="filterCat('services',this)" data-cat="services">🛠️ Services</li>
-          <li onclick="filterCat('sports',this)" data-cat="sports">⚽ Sports</li>
+          <li class="active" onclick="filterCat('all',this)" data-cat="all"><i class="fas fa-fire fa-fw" style="color:#ef4444;"></i> All Products</li>
+          <li onclick="filterCat('electronics',this)" data-cat="electronics"><i class="fas fa-laptop fa-fw" style="color:#3b82f6;"></i> Electronics</li>
+          <li onclick="filterCat('books',this)" data-cat="books"><i class="fas fa-book fa-fw" style="color:#10b981;"></i> Books &amp; Notes</li>
+          <li onclick="filterCat('fashion',this)" data-cat="fashion"><i class="fas fa-tshirt fa-fw" style="color:#8b5cf6;"></i> Fashion</li>
+          <li onclick="filterCat('instruments',this)" data-cat="instruments"><i class="fas fa-guitar fa-fw" style="color:#f59e0b;"></i> Instruments</li>
+          <li onclick="filterCat('services',this)" data-cat="services"><i class="fas fa-tools fa-fw" style="color:#64748b;"></i> Services</li>
+          <li onclick="filterCat('sports',this)" data-cat="sports"><i class="fas fa-futbol fa-fw" style="color:#14b8a6;"></i> Sports</li>
         </ul>
         <div class="sidebar-title" style="margin-top:24px;">Price Range</div>
         <div style="display:flex;gap:8px;">
           <input type="number" id="minPrice" class="form-control" placeholder="Min ₹" oninput="applyFilters()">
           <input type="number" id="maxPrice" class="form-control" placeholder="Max ₹" oninput="applyFilters()">
         </div>
+        <div class="sidebar-title" style="margin-top:24px;">Condition</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" value="New" onchange="applyFilters()" class="cond-filter"> New</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" value="Like New" onchange="applyFilters()" class="cond-filter"> Like New</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" value="Good" onchange="applyFilters()" class="cond-filter"> Good</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" value="Fair" onchange="applyFilters()" class="cond-filter"> Fair</label>
+        </div>
+        <div class="sidebar-title" style="margin-top:24px;">Availability</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" id="inStockOnly" onchange="applyFilters()"> In Stock Only</label>
       </aside>
 
       <!-- Products -->
@@ -178,8 +193,14 @@
 <div class="modal-overlay" id="paymentModal">
   <div class="modal-box modal-sm">
     <button class="modal-close" onclick="closeModal('paymentModal')"><i class="fas fa-times"></i></button>
-    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;">💳 Payment</h2>
-    <div style="background:var(--bg-primary);border-radius:12px;padding:14px;margin-bottom:20px;" id="paymentSummary"></div>
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;">💳 Checkout</h2>
+    <div style="background:var(--bg-primary);border-radius:12px;padding:14px;margin-bottom:16px;" id="paymentSummary"></div>
+    <!-- Coupon -->
+    <div class="coupon-row">
+      <input type="text" id="couponInput" placeholder="Coupon code (e.g. VIIT10)" maxlength="20">
+      <button class="btn btn-ghost btn-sm" onclick="applyCoupon()" id="couponBtn">Apply</button>
+    </div>
+    <div id="couponMsg"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
       <button class="btn btn-ghost" id="codBtn" onclick="selectPayment('COD')" style="flex-direction:column;gap:4px;padding:20px 12px;">
         <i class="fas fa-money-bill-wave" style="font-size:1.6rem;color:#10b981;"></i><span>Cash on Delivery</span>
@@ -216,7 +237,7 @@
     <form id="sellForm" onsubmit="submitProduct(event)">
       <div class="form-group"><label class="form-label required">Product Title</label><input type="text" id="pTitle" class="form-control" placeholder="e.g., iPhone 13 — Like New" required></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="furniture">Furniture</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
+        <div class="form-group"><label class="form-label required">Category</label><select id="pCategory" class="form-control" required><option value="electronics">Electronics</option><option value="books">Books &amp; Notes</option><option value="fashion">Fashion</option><option value="instruments">Instruments</option><option value="services">Services</option><option value="sports">Sports</option></select></div>
         <div class="form-group"><label class="form-label required">Condition</label><select id="pCondition" class="form-control" required><option value="New">New</option><option value="Like New">Like New</option><option value="Good">Good</option><option value="Fair">Fair</option></select></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -302,6 +323,12 @@ function applyFilters() {
   const max = parseFloat(document.getElementById('maxPrice')?.value || 999999);
   if (min) filtered = filtered.filter(p => p.price >= min);
   if (max < 999999) filtered = filtered.filter(p => p.price <= max);
+  // Condition filter
+  const condChecked = [...document.querySelectorAll('.cond-filter:checked')].map(c => c.value);
+  if (condChecked.length) filtered = filtered.filter(p => condChecked.includes(p.condition));
+  // In-stock filter
+  const inStockOnly = document.getElementById('inStockOnly')?.checked;
+  if (inStockOnly) filtered = filtered.filter(p => p.quantity > 0);
   const sort = document.getElementById('sortSelect').value;
   if (sort === 'price-low') filtered.sort((a,b) => a.price - b.price);
   else if (sort === 'price-high') filtered.sort((a,b) => b.price - a.price);
@@ -384,46 +411,96 @@ async function openProductDetail(id) {
   const p = currentProduct;
   const disc = p.original_price ? Math.round((1 - p.price/p.original_price)*100) : 0;
   const inWl = wishlist.some(w => w.id === p.id);
+  const is360 = p.category === 'electronics' && p.price >= 5000;
+  const stockBadge = p.quantity === 0
+    ? `<span class="low-stock-badge">❌ Out of Stock</span>`
+    : p.quantity <= 2
+    ? `<span class="low-stock-badge">⚠️ Only ${p.quantity} left</span>`
+    : `<span style="color:var(--accent-green);font-weight:700;">✅ In Stock (${p.quantity})</span>`;
+
+  const images = (p.images && p.images.length > 0) ? p.images : [p.image_url];
+  const imageCarousel = images.length > 1 
+    ? `<div class="carousel-wrap" style="position:relative; width:100%;">
+         <img src="${images[0]}" alt="${p.title}" id="mainProdImg" style="width:100%;height:280px;object-fit:cover;border-radius:16px;">
+         <div style="display:flex; justify-content:flex-start; gap:8px; margin-top:12px; overflow-x:auto; padding-bottom:8px;">
+           ${images.map((img, i) => `<img src="${img}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${i===0?'var(--accent-primary)':'transparent'}; transition:all 0.2s;" onclick="document.getElementById('mainProdImg').src=this.src; Array.from(this.parentElement.children).forEach(c=>c.style.border='2px solid transparent'); this.style.border='2px solid var(--accent-primary)';">`).join('')}
+         </div>
+       </div>`
+    : `<div class="zoom-wrap">
+        <img src="${images[0]}" alt="${p.title}" style="height:280px;object-fit:cover;width:100%;border-radius:16px;">
+        <span class="zoom-badge">🔍 Hover to Zoom</span>
+      </div>`;
+
   document.getElementById('productModalContent').innerHTML = `
     <button class="modal-close" onclick="closeModal('productModal')"><i class="fas fa-times"></i></button>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px; margin-top:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:8px;">
       <div>
-        <div class="product-detail-img-wrap"><img src="${p.image_url}" alt="${p.title}"></div>
+        ${is360 ? `<div class="spin-360-wrap">
+          <div class="spin-360-badge">↺ 360°</div>
+          <img src="${images[0]}" alt="${p.title}" style="width:100%;height:280px;object-fit:cover;transition:transform 0.4s;border-radius:16px;" id="spin360img">
+        </div>
+        <button onclick="document.getElementById('spin360img').classList.toggle('spinning')" class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%;"><i class="fas fa-sync"></i> Toggle 360°</button>` :
+        imageCarousel}
         ${p.eco ? `<div style="margin-top:8px;"><span class="badge badge-eco">🌿 Eco-Friendly Item</span></div>` : ''}
       </div>
       <div>
         <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:14px;line-height:1.3;">${p.title}</h2>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
           <span style="font-size:2rem;font-weight:900;color:var(--accent-primary);">₹${p.price.toLocaleString()}</span>
           ${p.original_price ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:1rem;">₹${p.original_price.toLocaleString()}</span><span style="background:var(--accent-red);color:white;padding:3px 10px;border-radius:8px;font-size:0.8rem;font-weight:800;">${disc}% OFF</span>` : ''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;font-size:0.9rem;">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:0.9rem;">
           <div><span style="color:var(--text-muted);font-weight:600;">Category:</span> <strong>${p.category.charAt(0).toUpperCase()+p.category.slice(1)}</strong></div>
           <div><span style="color:var(--text-muted);font-weight:600;">Condition:</span> <span class="badge badge-condition">${p.condition}</span></div>
           <div><span style="color:var(--text-muted);font-weight:600;">Location:</span> <strong>${p.location || 'Campus'}</strong></div>
-          <div><span style="color:var(--text-muted);font-weight:600;">In Stock:</span> <strong>${p.quantity || 1}</strong></div>
-          <div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-star" style="color:#f59e0b;"></i><strong>${(p.rating||4.5).toFixed(1)}</strong><span style="color:var(--text-muted);font-size:0.82rem;">(${Math.floor(Math.random()*50)+10} reviews)</span></div>
+          <div>${stockBadge}</div>
+          <div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-star" style="color:#f59e0b;"></i><strong>${(p.rating||4.5).toFixed(1)}</strong><span style="color:var(--text-muted);font-size:0.82rem;" id="reviewCount"></span></div>
         </div>
-        <div style="padding:14px;background:var(--bg-primary);border-radius:12px;margin-bottom:16px;">
-          <div style="font-weight:700;margin-bottom:6px;">Seller</div>
+        <div style="padding:12px;background:var(--bg-primary);border-radius:12px;margin-bottom:14px;">
+          <div style="font-weight:700;margin-bottom:4px;">Seller</div>
           <div style="font-size:0.88rem;color:var(--text-secondary);">
-            ${currentUser ? `${p.seller_name} · <i class="fas fa-check-circle" style="color:#3b82f6;"></i> Verified` : 'Verified Seller · <span style="color:var(--text-muted)">Contact admin for details</span>'}
+            ${currentUser ? `${p.seller_name} · <i class="fas fa-check-circle" style="color:#3b82f6;"></i> Verified` : 'Verified Seller · <span style="color:var(--text-muted)">Login to view contact</span>'}
           </div>
         </div>
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:14px;">
           <div style="font-weight:700;margin-bottom:6px;">Description</div>
           <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6;">${p.description}</p>
         </div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-primary" style="flex:1;" onclick="addToCartQuick(event,${p.id});closeModal('productModal');"><i class="fas fa-cart-plus"></i> Add to Cart</button>
-          <button class="btn btn-gold" style="flex:1;" onclick="buyNow(${p.id})"><i class="fas fa-bolt"></i> Buy Now</button>
+        <div style="display:flex;gap:10px;margin-bottom:0;">
+          <button class="btn btn-primary" style="flex:1;" onclick="addToCartQuick(event,${p.id});closeModal('productModal');" ${p.quantity===0?'disabled':''}><i class="fas fa-cart-plus"></i> Add to Cart</button>
+          <button class="btn btn-gold" style="flex:1;" onclick="buyNow(${p.id})" ${p.quantity===0?'disabled':''}><i class="fas fa-bolt"></i> Buy Now</button>
           <button class="wishlist-btn ${inWl?'active':''}" onclick="toggleWishlist(event,${p.id})" style="width:44px;height:44px;border-radius:12px;flex-shrink:0;">
             <i class="${inWl?'fas':'far'} fa-heart wi-icon"></i>
           </button>
         </div>
       </div>
-    </div>`;
+    </div>
+    <!-- Reviews -->
+    <div style="margin-top:28px;border-top:1px solid var(--border-color);padding-top:20px;">
+      <h3 style="font-weight:800;margin-bottom:16px;">⭐ Reviews & Ratings</h3>
+      <div id="reviewsList">Loading reviews...</div>
+      ${currentUser && currentUser.role === 'buyer' ? `
+      <div style="margin-top:20px;background:var(--bg-primary);border-radius:14px;padding:18px;">
+        <div style="font-weight:700;margin-bottom:12px;">Leave a Review</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:0.88rem;font-weight:600;color:var(--text-muted);">Your Rating:</span>
+          <div class="star-input" id="ratingInput">
+            <input type="radio" name="star" id="s5" value="5"><label for="s5">★</label>
+            <input type="radio" name="star" id="s4" value="4"><label for="s4">★</label>
+            <input type="radio" name="star" id="s3" value="3"><label for="s3">★</label>
+            <input type="radio" name="star" id="s2" value="2"><label for="s2">★</label>
+            <input type="radio" name="star" id="s1" value="1"><label for="s1">★</label>
+          </div>
+        </div>
+        <textarea id="reviewComment" class="form-control" rows="2" placeholder="Share your experience..." style="margin-bottom:10px;"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="submitReview(${p.id})">Submit Review</button>
+      </div>` : ''}
+    </div>
+    <!-- Related Products -->
+    <div style="margin-top:24px;border-top:1px solid var(--border-color);padding-top:20px;" id="relatedSection"></div>`;
   openModal('productModal');
+  loadReviews(p.id);
+  loadRelated(p.id, p.category);
 }
 
 // ─── Cart ────────────────────────────────────────────────────
@@ -644,6 +721,124 @@ function goDashboard() {
   if (currentUser.role === 'buyer') window.location.href = 'buyer.html';
   else if (currentUser.role === 'seller') window.location.href = 'seller.html';
   else if (currentUser.role === 'admin') window.location.href = 'admin.html';
+}
+
+// ─── Coupon ───────────────────────────────────────────────────
+let currentCouponDiscount = 0;
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  if (!code) { showToast('Enter a coupon code', 'error'); return; }
+  const btn = document.getElementById('couponBtn');
+  btn.textContent = 'Checking...'; btn.disabled = true;
+  try {
+    const p = currentProduct;
+    const total = p.price + (p.service_fee||0) + (p.platform_charge||0);
+    const res = await API.post('/coupons/validate', { code, total });
+    currentCouponDiscount = res.discount;
+    document.getElementById('couponMsg').innerHTML = `<div class="coupon-applied"><i class="fas fa-tag"></i> Coupon applied! You save ₹${res.discount}</div>`;
+    updatePaymentSummary();
+  } catch(err) {
+    currentCouponDiscount = 0;
+    document.getElementById('couponMsg').innerHTML = `<div style="color:var(--accent-red);font-size:0.85rem;padding:6px 0;"><i class="fas fa-times"></i> ${err.message}</div>`;
+  }
+  btn.textContent = 'Apply'; btn.disabled = false;
+}
+function updatePaymentSummary() {
+  if (!currentProduct) return;
+  const p = currentProduct;
+  const sf = p.service_fee || 0;
+  const pc = p.platform_charge || 0;
+  const disc = currentCouponDiscount || 0;
+  const finalTotal = Math.max(0, p.price + sf + pc - disc);
+  document.getElementById('paymentSummary').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:7px;font-size:0.9rem;">
+      <div style="font-weight:700;margin-bottom:4px;">${p.title}</div>
+      <div style="display:flex;justify-content:space-between;"><span>Price</span><span>₹${p.price.toLocaleString()}</span></div>
+      ${sf?`<div style="display:flex;justify-content:space-between;color:var(--text-muted);"><span>Service Fee</span><span>₹${sf}</span></div>`:''}
+      ${pc?`<div style="display:flex;justify-content:space-between;color:var(--text-muted);"><span>Platform Charge</span><span>₹${pc}</span></div>`:''}
+      ${disc?`<div style="display:flex;justify-content:space-between;color:var(--accent-green);font-weight:700;"><span>Coupon Discount</span><span>-₹${disc}</span></div>`:''}
+      <div style="display:flex;justify-content:space-between;font-weight:900;font-size:1.1rem;border-top:1px solid var(--border-color);padding-top:7px;margin-top:3px;"><span>Total</span><span style="color:var(--accent-primary);">₹${finalTotal.toLocaleString()}</span></div>
+    </div>`;
+}
+
+// ─── Reviews ──────────────────────────────────────────────────
+async function loadReviews(productId) {
+  try {
+    const reviews = await API.get(`/reviews/${productId}`);
+    const el = document.getElementById('reviewsList');
+    if (!el) return;
+    const count = document.getElementById('reviewCount');
+    if (count) count.textContent = `(${reviews.length} review${reviews.length!==1?'s':''})`;
+    if (!reviews.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem;padding:8px 0;">No reviews yet. Be the first!</p>'; return; }
+    el.innerHTML = reviews.map(r => `<div class="review-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div><div class="review-author">${r.reviewer_name}</div><div class="review-date">${new Date(r.created_at).toLocaleDateString()}</div></div>
+        <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+      </div>
+      ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
+    </div>`).join('');
+  } catch{}
+}
+
+async function submitReview(productId) {
+  const rating = document.querySelector('input[name="star"]:checked')?.value;
+  const comment = document.getElementById('reviewComment')?.value.trim();
+  if (!rating) { showToast('Select a star rating', 'error'); return; }
+  try {
+    await API.post('/reviews', { productId, rating: parseInt(rating), comment });
+    showToast('Review submitted! ⭐', 'success');
+    loadReviews(productId);
+    document.querySelectorAll('input[name="star"]').forEach(r => r.checked = false);
+    if (document.getElementById('reviewComment')) document.getElementById('reviewComment').value = '';
+  } catch(err) { showToast(err.message, 'error'); }
+}
+
+// ─── Related Products ─────────────────────────────────────────
+async function loadRelated(currentId, category) {
+  const related = allProducts.filter(p => p.id !== currentId && p.category === category).slice(0, 4);
+  const el = document.getElementById('relatedSection');
+  if (!el || !related.length) return;
+  el.innerHTML = `<h3 style="font-weight:800;margin-bottom:14px;">📦 Related Products</h3>
+    <div class="related-strip">${related.map(p=>`
+      <div class="related-card" onclick="closeModal('productModal');setTimeout(()=>openProductDetail(${p.id}),150)">
+        <img src="${p.image_url}" alt="${p.title}" loading="lazy">
+        <div class="related-card-body">
+          <div class="related-card-title">${p.title}</div>
+          <div class="related-card-price">₹${p.price.toLocaleString()}</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+</script>
+
+<!-- Live Chat -->
+<div class="chat-widget">
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-panel-header">
+      <div><div style="font-weight:800;">💬 Support Chat</div><div style="font-size:0.75rem;opacity:0.85;">We reply fast!</div></div>
+      <button onclick="document.getElementById('chatPanel').classList.remove('open')" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:8px;cursor:pointer;">✕</button>
+    </div>
+    <div class="chat-messages-area" id="chatMsgs">
+      <div class="chat-msg theirs">👋 Need help? Ask us anything!<div class="chat-msg-time">Support</div></div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send-btn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+  <button class="chat-bubble" onclick="document.getElementById('chatPanel').classList.toggle('open')"><i class="fas fa-comment-dots"></i></button>
+</div>
+<script>
+async function sendChat() {
+  const user = Auth.getUser();
+  const inp = document.getElementById('chatInp');
+  const msg = inp.value.trim(); if (!msg) return;
+  if (!user) { showToast('Login to chat','error'); return; }
+  inp.value = '';
+  const area = document.getElementById('chatMsgs');
+  area.innerHTML += `<div class="chat-msg mine">${msg}<div class="chat-msg-time">You · now</div></div>`;
+  area.scrollTop = area.scrollHeight;
+  try { await API.post('/chat', { message: msg }); } catch{}
 }
 </script>
 </body>
