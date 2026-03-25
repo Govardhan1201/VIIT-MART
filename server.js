@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
-const dbFile = path.join(__dirname, 'viitmart.db');
+const dbFile = process.env.DB_PATH || path.join(__dirname, 'viitmart.db');
 const rawDb = new sqlite3.Database(dbFile, (err) => {
   if (err) { console.error('DB open error:', err.message); process.exit(1); }
   console.log('✅ SQLite connected →', dbFile);
