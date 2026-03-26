@@ -1,7 +1,7 @@
 // VIIT Mart API Client
 const API_BASE = window.location.protocol === 'file:' 
   ? 'http://localhost:3000/api'
-  : `${window.location.protocol}//${window.location.hostname}:3000/api`;
+  : '/api';
 
 function getToken() { return localStorage.getItem('vm_token'); }
 
