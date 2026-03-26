@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -19,26 +18,33 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
+const { createClient } = require('@libsql/client');
 const dbFile = process.env.DB_PATH || path.join(__dirname, 'viitmart.db');
-const rawDb = new sqlite3.Database(dbFile, (err) => {
-  if (err) { console.error('DB open error:', err.message); process.exit(1); }
-  console.log('✅ SQLite connected →', dbFile);
+
+const client = createClient({
+  url: process.env.TURSO_DATABASE_URL || `file:${dbFile}`,
+  authToken: process.env.TURSO_AUTH_TOKEN
 });
+console.log('✅ Database Connected →', process.env.TURSO_DATABASE_URL ? 'Cloud (Turso)' : 'Local File');
 
-// Promise wrappers
+// Wrapper mapping Turso's API identically to our previous sqlite3 implementation
 const db = {
-  run: (sql, params = []) => new Promise((res, rej) =>
-    rawDb.run(sql, params, function(err) { err ? rej(err) : res({ lastID: this.lastID, changes: this.changes }); })),
-  get: (sql, params = []) => new Promise((res, rej) =>
-    rawDb.get(sql, params, (err, row) => err ? rej(err) : res(row))),
-  all: (sql, params = []) => new Promise((res, rej) =>
-    rawDb.all(sql, params, (err, rows) => err ? rej(err) : res(rows))),
-  exec: (sql) => new Promise((res, rej) =>
-    rawDb.exec(sql, (err) => err ? rej(err) : res())),
+  get: async (sql, params = []) => {
+    const rs = await client.execute({ sql, args: params });
+    return rs.rows[0];
+  },
+  all: async (sql, params = []) => {
+    const rs = await client.execute({ sql, args: params });
+    return rs.rows;
+  },
+  run: async (sql, params = []) => {
+    const rs = await client.execute({ sql, args: params });
+    return { lastID: Number(rs.lastInsertRowid), changes: rs.rowsAffected };
+  },
+  exec: async (sql) => {
+    return client.executeMultiple(sql);
+  }
 };
-
-// Enable WAL mode for performance
-rawDb.run('PRAGMA journal_mode=WAL');
 
 async function initDb() {
   await db.exec(`
@@ -218,8 +224,12 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'All required fields must be filled' });
     if (role === 'admin') return res.status(403).json({ error: 'Admin registration not allowed' });
 
-    const existing = await db.get('SELECT id FROM users WHERE roll_number = ?', [rollNumber]);
-    if (existing) return res.status(409).json({ error: 'Roll number already registered' });
+    // Enforce max 1 buyer + 1 seller per roll number
+    const existing = await db.all('SELECT role FROM users WHERE roll_number = ?', [rollNumber]);
+    if (existing.some(u => u.role === role))
+      return res.status(409).json({ error: `A ${role} account already exists for this roll number` });
+    if (existing.length >= 2)
+      return res.status(409).json({ error: 'Maximum 2 accounts (buyer + seller) allowed per roll number' });
 
     const hash = await bcrypt.hash(password, 10);
     const result = await db.run(
@@ -376,9 +386,20 @@ app.put('/api/products/:id/reject', requireAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/api/products/:id', requireAdmin, async (req, res) => {
-  try { await db.run('DELETE FROM products WHERE id = ?', [req.params.id]); res.json({ success: true }); }
-  catch (err) { res.status(500).json({ error: err.message }); }
+app.delete('/api/products/:id', authenticate, async (req, res) => {
+  try {
+    const product = await db.get('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (req.user.role === 'admin') {
+      await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
+    } else if (req.user.role === 'seller' && product.seller_roll === req.user.rollNumber) {
+      if (product.status === 'approved') return res.status(403).json({ error: 'Cannot delete an active approved listing. Contact admin.' });
+      await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
+    } else {
+      return res.status(403).json({ error: 'Not authorised' });
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── ORDER ROUTES ─────────────────────────────────────────────────────────────
@@ -422,7 +443,15 @@ app.post('/api/orders', authenticate, async (req, res) => {
         [orderId, product.id, product.title, product.image_url, req.user.rollNumber, req.user.name, req.user.phone, product.seller_roll, product.seller_name, product.seller_phone, paymentMethod, product.price, serviceFee, platformCharge, totalPaid, LISTING_FEE, sellerPayout]
       );
       await db.run('UPDATE products SET quantity = MAX(0, quantity - 1) WHERE id = ?', [product.id]);
-      await db.run("UPDATE products SET status = 'sold' WHERE id = ? AND quantity <= 0", [product.id]);
+      // Auto-delete product when stock hits 0
+      const updatedProd = await db.get('SELECT quantity FROM products WHERE id = ?', [product.id]);
+      if (updatedProd && updatedProd.quantity <= 0) {
+        await db.run('DELETE FROM products WHERE id = ?', [product.id]);
+      }
+      // Increment coupon usage if coupon code was applied in this order item
+      if (item.couponCode) {
+        await db.run("UPDATE coupons SET used_count = used_count + 1 WHERE code = ? AND is_active = 1", [item.couponCode.toUpperCase()]);
+      }
       await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
         [product.seller_roll, '🛒 New Order!', `Someone ordered your "${product.title}". Check your dashboard.`]);
       if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
@@ -460,18 +489,43 @@ app.put('/api/notifications/read', authenticate, async (req, res) => {
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── ADMIN ROUTES ─────────────────────────────────────────────────────────────
+
+// ─── ADMIN STATS & ANALYTICS ──────────────────────────────────────────────────
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   try {
-    const [users, products, pendingProducts, orders, pendingOrders, earnings] = await Promise.all([
-      db.get('SELECT COUNT(*) as cnt FROM users'),
-      db.get("SELECT COUNT(*) as cnt FROM products WHERE status = 'approved'"),
-      db.get("SELECT COUNT(*) as cnt FROM products WHERE status = 'pending'"),
-      db.get('SELECT COUNT(*) as cnt FROM orders'),
-      db.get("SELECT COUNT(*) as cnt FROM orders WHERE status != 'completed' AND status != 'cancelled'"),
-      db.get('SELECT * FROM earnings WHERE id = 1'),
-    ]);
-    res.json({ users: users.cnt, products: products.cnt, pendingProducts: pendingProducts.cnt, orders: orders.cnt, pendingOrders: pendingOrders.cnt, earnings });
+    const users = await db.get("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
+    const products = await db.get("SELECT COUNT(*) as count FROM products WHERE status = 'approved'");
+    const pendingProducts = await db.get("SELECT COUNT(*) as count FROM products WHERE status = 'pending'");
+    const orders = await db.get("SELECT COUNT(*) as count FROM orders");
+    const pendingOrders = await db.get("SELECT COUNT(*) as count FROM orders WHERE status != 'completed' AND status != 'cancelled'");
+    const earnings = await db.get("SELECT * FROM earnings WHERE id = 1");
+
+    res.json({
+      users: users ? users.count : 0,
+      products: products ? products.count : 0,
+      pendingProducts: pendingProducts ? pendingProducts.count : 0,
+      orders: orders ? orders.count : 0,
+      pendingOrders: pendingOrders ? pendingOrders.count : 0,
+      earnings: earnings || { total:0, listing_fees:0, service_fees:0, extra_charges:0 }
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+  try {
+    const totalRevRow = await db.get("SELECT total FROM earnings WHERE id=1");
+    const totalOrdersRow = await db.get("SELECT COUNT(*) as count FROM orders");
+    const topProducts = await db.all("SELECT product_title as title, COUNT(id) as orders, SUM(total_paid) as revenue FROM orders GROUP BY product_id ORDER BY orders DESC LIMIT 5");
+    const statusFunnel = await db.all("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
+    const categorySales = await db.all("SELECT p.category, COUNT(o.id) as count, SUM(o.total_paid) as revenue FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY count DESC");
+
+    res.json({
+      totalRevenue: totalRevRow ? totalRevRow.total : 0,
+      totalOrders: totalOrdersRow ? totalOrdersRow.count : 0,
+      topProducts,
+      statusFunnel,
+      categorySales
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -489,14 +543,24 @@ app.delete('/api/admin/users/:roll', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/admin/reset', requireAdmin, async (req, res) => {
+  // Factory reset removed per policy
+  res.status(410).json({ error: 'Factory reset is disabled' });
+});
+
+// ─── ADMIN: Promote individual user year ──────────────────────────────────────
+app.put('/api/admin/users/:roll/year', requireAdmin, async (req, res) => {
   try {
-    await db.exec(`
-      DELETE FROM orders;
-      DELETE FROM notifications;
-      DELETE FROM products;
-      DELETE FROM users WHERE role != 'admin';
-    `);
-    await db.run('UPDATE earnings SET listing_fees=0, service_fees=0, extra_charges=0, total=0 WHERE id=1');
+    const { year } = req.body;
+    if (!year) return res.status(400).json({ error: 'Year required' });
+    await db.run('UPDATE users SET year = ? WHERE roll_number = ?', [String(year), req.params.roll]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── ADMIN: Bulk promote all students one year forward ────────────────────────
+app.put('/api/admin/promote-all-years', requireAdmin, async (req, res) => {
+  try {
+    await db.run("UPDATE users SET year = CAST(MIN(CAST(year AS INTEGER)+1,4) AS TEXT) WHERE role!='admin' AND CAST(year AS INTEGER) BETWEEN 1 AND 3");
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -526,10 +590,36 @@ app.post('/api/reviews', authenticate, async (req, res) => {
     } else {
       await db.run('INSERT INTO reviews (product_id,reviewer_roll,reviewer_name,rating,comment) VALUES (?,?,?,?,?)', [productId, req.user.rollNumber, req.user.name, rating, comment || '']);
     }
-    // Update product average rating
     const avg = await db.get('SELECT AVG(rating) as avg FROM reviews WHERE product_id = ?', [productId]);
     if (avg && avg.avg) await db.run('UPDATE products SET rating = ? WHERE id = ?', [parseFloat(avg.avg.toFixed(1)), productId]);
     res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Admin: delete a review (for moderation)
+app.delete('/api/reviews/:id', requireAdmin, async (req, res) => {
+  try { await db.run('DELETE FROM reviews WHERE id = ?', [req.params.id]); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Admin: fetch all reviews across the platform
+app.get('/api/admin/reviews', requireAdmin, async (req, res) => {
+  try {
+    const reviews = await db.all(`
+      SELECT r.*, p.title as product_title 
+      FROM reviews r 
+      JOIN products p ON r.product_id = p.id 
+      ORDER BY r.created_at DESC
+    `);
+    res.json(reviews);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Lookup: auto-fill registration info from existing roll ─────────────────
+app.get('/api/lookup/:roll', async (req, res) => {
+  try {
+    const user = await db.get('SELECT name, branch, year, phone FROM users WHERE roll_number = ?', [req.params.roll]);
+    res.json(user || {});
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -599,64 +689,23 @@ app.put('/api/addresses/:id/default', authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── RETURN REQUESTS ──────────────────────────────────────────────────────────
-app.get('/api/returns/mine', authenticate, async (req, res) => {
-  try { res.json(await db.all('SELECT * FROM return_requests WHERE buyer_roll = ? ORDER BY created_at DESC', [req.user.rollNumber])); }
-  catch (err) { res.status(500).json({ error: err.message }); }
-});
+// ─── RETURN REQUESTS (disabled – no returns policy) ──────────────────────────
 
-app.get('/api/returns/all', requireAdmin, async (req, res) => {
-  try { res.json(await db.all('SELECT r.*, o.product_title, o.buyer_name FROM return_requests r LEFT JOIN orders o ON r.order_id = o.id ORDER BY r.created_at DESC')); }
-  catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.post('/api/returns', authenticate, async (req, res) => {
+// ─── HELPDESK (renamed from Live Chat) ───────────────────────────────────────
+// Admin: get all users who contacted helpdesk grouped by roll number
+app.get('/api/chat/users', requireAdmin, async (req, res) => {
   try {
-    const { orderId, reason } = req.body;
-    if (!orderId || !reason) return res.status(400).json({ error: 'Order ID and reason required' });
-    const order = await db.get('SELECT * FROM orders WHERE id = ? AND buyer_roll = ?', [orderId, req.user.rollNumber]);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    const existing = await db.get('SELECT id FROM return_requests WHERE order_id = ?', [orderId]);
-    if (existing) return res.status(409).json({ error: 'Return already requested for this order' });
-    await db.run('INSERT INTO return_requests (order_id,buyer_roll,reason) VALUES (?,?,?)', [orderId, req.user.rollNumber, reason]);
-    const admin = await db.get("SELECT roll_number FROM users WHERE role = 'admin'");
-    if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [admin.roll_number, '↩️ Return Request', `${req.user.name} requested a return for order "${order.product_title}"`]);
-    res.json({ success: true });
+    const rows = await db.all(`
+      SELECT user_roll, user_name, MAX(created_at) as last_message,
+             COUNT(CASE WHEN is_admin=0 THEN 1 END) as user_messages
+      FROM chat_messages
+      WHERE is_admin = 0
+      GROUP BY user_roll
+      ORDER BY last_message DESC`);
+    res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.put('/api/returns/:id/status', requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const ret = await db.get('SELECT * FROM return_requests WHERE id = ?', [req.params.id]);
-    if (!ret) return res.status(404).json({ error: 'Return not found' });
-    await db.run('UPDATE return_requests SET status = ? WHERE id = ?', [status, req.params.id]);
-    await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [ret.buyer_roll, '↩️ Return Update', `Your return request status changed to: ${status}`]);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
-app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
-  try {
-    const [topProducts, revenueByDay, userGrowth, orderFunnel, categoryStats] = await Promise.all([
-      db.all(`SELECT p.title, COUNT(o.id) as order_count, SUM(o.total_paid) as revenue
-        FROM orders o JOIN products p ON o.product_id = p.id
-        GROUP BY o.product_id ORDER BY order_count DESC LIMIT 5`),
-      db.all(`SELECT date(ordered_at) as day, SUM(total_paid) as revenue, COUNT(*) as orders
-        FROM orders WHERE ordered_at >= date('now','-30 days')
-        GROUP BY day ORDER BY day ASC`),
-      db.all(`SELECT date(registered_at) as day, COUNT(*) as count
-        FROM users WHERE registered_at >= date('now','-30 days')
-        GROUP BY day ORDER BY day ASC`),
-      db.all(`SELECT status, COUNT(*) as count FROM orders GROUP BY status`),
-      db.all(`SELECT p.category, COUNT(o.id) as orders FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY orders DESC`)
-    ]);
-    res.json({ topProducts, revenueByDay, userGrowth, orderFunnel, categoryStats });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ─── LIVE CHAT ────────────────────────────────────────────────────────────────
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin';
@@ -673,8 +722,20 @@ app.post('/api/chat', authenticate, async (req, res) => {
     if (!message) return res.status(400).json({ error: 'Message required' });
     const isAdmin = req.user.role === 'admin';
     const roll = isAdmin && targetRoll ? targetRoll : req.user.rollNumber;
-    await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
+    const result = await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
       [roll, req.user.name, message, isAdmin ? 1 : 0]);
+    res.json({ success: true, id: result.lastID });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/chat/:id', authenticate, async (req, res) => {
+  try {
+    const isAdmin = req.user.role === 'admin';
+    if (isAdmin) {
+      await db.run('DELETE FROM chat_messages WHERE id = ?', [req.params.id]);
+    } else {
+      await db.run('DELETE FROM chat_messages WHERE id = ? AND user_roll = ? AND is_admin = 0', [req.params.id, req.user.rollNumber]);
+    }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -701,22 +762,22 @@ app.get('/api/products/bestsellers', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-
 // ─── Static File Serving ──────────────────────────────────────────────────────
-const pages = ['index', 'shop', 'login', 'register', 'buyer', 'seller', 'admin', 'product', 'track'];
+const pages = ['index', 'shop', 'login', 'register', 'buyer', 'seller'];
 pages.forEach(p => {
   app.get(`/${p === 'index' ? '' : p}`, (req, res) =>
     res.sendFile(path.join(__dirname, p === 'index' ? 'index.html' : `${p}.html`)));
 });
+// Admin portal accessible only at hidden URL — not linked publicly
+app.get('/viitmart-admin-portal', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 initDb().then(() => {
   app.listen(PORT, () => {
     console.log(`\n🎓 VIIT Mart is LIVE at http://localhost:${PORT}`);
-    console.log(`   → Home:     http://localhost:${PORT}/`);
-    console.log(`   → Shop:     http://localhost:${PORT}/shop`);
-    console.log(`   → Admin:    http://localhost:${PORT}/admin`);
+    console.log(`   → Home:   http://localhost:${PORT}/`);
+    console.log(`   → Shop:   http://localhost:${PORT}/shop`);
+    console.log(`   → Admin:  http://localhost:${PORT}/viitmart-admin-portal`);
     console.log(`\n   Admin credentials: Secret=ADMIN2025 | Password=Admin123\n`);
   });
 }).catch(err => {

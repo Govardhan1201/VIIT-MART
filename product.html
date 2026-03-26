@@ -237,7 +237,7 @@ async function loadReviews() {
           </div>
           ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
         </div>`).join('');
-    if (currentUser && currentUser.role === 'buyer') {
+    if (currentUser) {
       document.getElementById('reviewForm').innerHTML = `
         <div style="font-weight:800;margin-bottom:14px;">Leave a Review</div>
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">

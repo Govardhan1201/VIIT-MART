@@ -62,8 +62,6 @@
         <div class="dash-nav-item" onclick="showSection('orders',this)"><i class="fas fa-shopping-bag"></i> My Orders</div>
         <div class="dash-nav-item" onclick="showSection('tracking',this)"><i class="fas fa-map-marker-alt"></i> Order Tracking</div>
         <div class="dash-nav-item" onclick="showSection('wishlist',this)"><i class="fas fa-heart"></i> Wishlist</div>
-        <div class="dash-nav-item" onclick="showSection('addresses',this)"><i class="fas fa-map-pin"></i> Saved Addresses</div>
-        <div class="dash-nav-item" onclick="showSection('returns',this)"><i class="fas fa-undo"></i> Return Requests</div>
         <div class="dash-nav-item" onclick="showSection('analytics',this)"><i class="fas fa-chart-bar"></i> Spending Analytics</div>
         <div class="dash-nav-item" onclick="showSection('notifs',this)"><i class="fas fa-bell"></i> Notifications <span id="navNotifBadge" style="background:var(--accent-red);color:white;font-size:0.72rem;padding:2px 7px;border-radius:8px;font-weight:800;margin-left:auto;display:none;"></span></div>
         <div class="dash-nav-item" onclick="showSection('settings',this)"><i class="fas fa-cog"></i> Account Settings</div>
@@ -115,47 +113,6 @@
           </div>
         </div>
 
-        <!-- Saved Addresses -->
-        <div id="sec-addresses" class="dash-section">
-          <div class="section-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-              <h3 style="font-weight:800;">Saved Addresses</h3>
-              <button class="btn btn-primary btn-sm" onclick="showAddressForm()"><i class="fas fa-plus"></i> Add Address</button>
-            </div>
-            <div id="addressForm" style="display:none;background:var(--bg-primary);border-radius:14px;padding:20px;margin-bottom:20px;">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-group" style="grid-column:1/-1;"><label class="form-label required">Label (e.g. Hostel A, Home)</label><input type="text" id="addrLabel" class="form-control" placeholder="My Hostel"></div>
-                <div class="form-group"><label class="form-label">Hostel / Building</label><input type="text" id="addrHostel" class="form-control" placeholder="Boys Hostel Block B"></div>
-                <div class="form-group"><label class="form-label">Room Number</label><input type="text" id="addrRoom" class="form-control" placeholder="204"></div>
-                <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Landmark</label><input type="text" id="addrLandmark" class="form-control" placeholder="Near the canteen"></div>
-                <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;cursor:pointer;"><input type="checkbox" id="addrDefault"> Set as default address</label>
-              </div>
-              <div style="display:flex;gap:10px;margin-top:14px;">
-                <button class="btn btn-primary btn-sm" onclick="saveAddress()">Save Address</button>
-                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('addressForm').style.display='none'">Cancel</button>
-              </div>
-            </div>
-            <div id="addressesList"></div>
-          </div>
-        </div>
-
-        <!-- Return Requests -->
-        <div id="sec-returns" class="dash-section">
-          <div class="section-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-              <h3 style="font-weight:800;">Return Requests</h3>
-              <button class="btn btn-primary btn-sm" onclick="showReturnForm()"><i class="fas fa-undo"></i> Request Return</button>
-            </div>
-            <div id="returnForm" style="display:none;background:var(--bg-primary);border-radius:14px;padding:20px;margin-bottom:20px;">
-              <div class="form-group"><label class="form-label required">Order ID</label><input type="text" id="returnOrderId" class="form-control" placeholder="Paste your Order ID"></div>
-              <div class="form-group"><label class="form-label required">Reason for Return</label><textarea id="returnReason" class="form-control" rows="3" placeholder="Please describe the issue..."></textarea></div>
-              <div style="display:flex;gap:10px;margin-top:14px;">
-                <button class="btn btn-primary btn-sm" onclick="submitReturn()">Submit Request</button>
-                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('returnForm').style.display='none'">Cancel</button>
-              </div>
-            </div>
-            <div id="returnsList"></div>
-          </div>
         </div>
 
         <!-- Spending Analytics -->
@@ -233,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('settPhone').value = currentUser.phone;
   document.getElementById('settRole').value = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
 
-  await Promise.all([loadOrders(), loadNotifications(), loadAddresses(), loadReturns()]);
+  await Promise.all([loadOrders(), loadNotifications()]);
 });
 
 async function loadOrders() {
@@ -299,7 +256,10 @@ function renderOrdersTable(orders, containerId) {
         <td style="font-size:0.82rem;font-weight:700;">${o.payment_method}</td>
         <td><span class="status-badge status-${(o.status||'pending').replace(/ /g,'-')}">${(o.status||'pending').replace(/-/g,' ')}</span></td>
         <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(o.ordered_at).toLocaleDateString()}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="trackOrder('${o.id}')"><i class="fas fa-map-marker-alt"></i></button></td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="trackOrder('${o.id}')" title="Track Order"><i class="fas fa-map-marker-alt"></i></button>
+          ${o.status === 'completed' ? `<a href="product.html?id=${o.product_id}#reviewsList" class="btn btn-ghost btn-sm" title="Leave Review" style="color:var(--accent-gold);"><i class="fas fa-star"></i></a>` : ''}
+        </td>
       </tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -370,112 +330,7 @@ function removeWishlistItem(id) {
   showToast('Removed from wishlist', 'info');
 }
 
-// ─── Addresses ────────────────────────────────────────────────
-async function loadAddresses() {
-  try {
-    const addresses = await API.get('/addresses');
-    renderAddresses(addresses);
-  } catch{}
-}
-
-function renderAddresses(addresses) {
-  const el = document.getElementById('addressesList');
-  if (!el) return;
-  if (!addresses.length) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:30px;">No saved addresses. Add one!</p>'; return; }
-  el.innerHTML = addresses.map(a => `
-    <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;">
-      <div style="font-size:1.4rem;flex-shrink:0;">📍</div>
-      <div style="flex:1;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-weight:800;font-size:0.92rem;">${a.label}</span>
-          ${a.is_default ? '<span class="badge badge-approved">Default</span>' : ''}
-        </div>
-        <div style="font-size:0.85rem;color:var(--text-secondary);">${[a.hostel, `Room ${a.room}`, a.landmark].filter(Boolean).join(' • ')}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
-        ${!a.is_default ? `<button class="btn btn-ghost btn-sm" onclick="setDefaultAddress(${a.id})">Set Default</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="deleteAddress(${a.id})" style="color:var(--accent-red);"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>`).join('');
-}
-
-function showAddressForm() { document.getElementById('addressForm').style.display = 'block'; document.getElementById('addrLabel').focus(); }
-
-async function saveAddress() {
-  const label = document.getElementById('addrLabel').value.trim();
-  if (!label) { showToast('Label is required', 'error'); return; }
-  try {
-    await API.post('/addresses', {
-      label, hostel: document.getElementById('addrHostel').value.trim(),
-      room: document.getElementById('addrRoom').value.trim(),
-      landmark: document.getElementById('addrLandmark').value.trim(),
-      isDefault: document.getElementById('addrDefault').checked
-    });
-    showToast('Address saved! 📍', 'success');
-    document.getElementById('addressForm').style.display = 'none';
-    document.getElementById('addrLabel').value = '';
-    document.getElementById('addrHostel').value = '';
-    document.getElementById('addrRoom').value = '';
-    document.getElementById('addrLandmark').value = '';
-    document.getElementById('addrDefault').checked = false;
-    await loadAddresses();
-  } catch(err) { showToast(err.message, 'error'); }
-}
-
-async function deleteAddress(id) {
-  if (!confirm('Delete this address?')) return;
-  try { await API.delete(`/addresses/${id}`); await loadAddresses(); showToast('Address deleted', 'info'); } catch(err) { showToast(err.message,'error'); }
-}
-
-async function setDefaultAddress(id) {
-  try { await API.put(`/addresses/${id}/default`, {}); await loadAddresses(); showToast('Default address updated', 'success'); } catch(err) { showToast(err.message,'error'); }
-}
-
-// ─── Returns ──────────────────────────────────────────────────
-async function loadReturns() {
-  try {
-    const returns = await API.get('/returns/mine');
-    renderReturns(returns);
-  } catch{}
-}
-
-function renderReturns(returns) {
-  const el = document.getElementById('returnsList');
-  if (!el) return;
-  if (!returns.length) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:30px;">No return requests yet.</p>'; return; }
-  el.innerHTML = returns.map(r => `
-    <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-        <div>
-          <div style="font-weight:700;font-size:0.9rem;">Order: ${r.order_id.substring(0,8).toUpperCase()}</div>
-          <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px;">${r.reason}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${new Date(r.created_at).toLocaleDateString()}</div>
-        </div>
-        <span class="status-badge status-${r.status}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span>
-      </div>
-    </div>`).join('');
-}
-
-function showReturnForm() {
-  document.getElementById('returnForm').style.display = 'block';
-  // Pre-fill if there's only one order
-  if (allOrders.length === 1) document.getElementById('returnOrderId').value = allOrders[0].id;
-  document.getElementById('returnOrderId').focus();
-}
-
-async function submitReturn() {
-  const orderId = document.getElementById('returnOrderId').value.trim();
-  const reason = document.getElementById('returnReason').value.trim();
-  if (!orderId || !reason) { showToast('Fill all fields', 'error'); return; }
-  try {
-    await API.post('/returns', { orderId, reason });
-    showToast('Return request submitted! ↩️', 'success');
-    document.getElementById('returnForm').style.display = 'none';
-    document.getElementById('returnOrderId').value = '';
-    document.getElementById('returnReason').value = '';
-    await loadReturns();
-  } catch(err) { showToast(err.message, 'error'); }
-}
+// ─── Analytics ────────────────────────────────────────────────
 
 // ─── Notifications ────────────────────────────────────────────
 async function loadNotifications() {

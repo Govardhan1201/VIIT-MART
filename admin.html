@@ -122,7 +122,8 @@
         <div class="admin-nav-item" onclick="showAdmin('earnings')"><div class="nav-icon" style="background:rgba(245,158,11,0.15);">💰</div>Earnings</div>
         <div class="admin-nav-item" onclick="showAdmin('analytics')"><div class="nav-icon" style="background:rgba(99,102,241,0.15);">📊</div>Analytics</div>
         <div class="admin-nav-item" onclick="showAdmin('discounts')"><div class="nav-icon" style="background:rgba(16,185,129,0.15);">🏷️</div>Discounts</div>
-        <div class="admin-nav-item" onclick="showAdmin('livechat')"><div class="nav-icon" style="background:rgba(236,72,153,0.15);">💬</div>Live Chat</div>
+        <div class="admin-nav-item" onclick="showAdmin('reviews')"><div class="nav-icon" style="background:rgba(239,68,68,0.15);">⭐</div>Reviews</div>
+        <div class="admin-nav-item" onclick="showAdmin('livechat')"><div class="nav-icon" style="background:rgba(236,72,153,0.15);">💬</div>Helpdesk</div>
       </div>
       <div style="padding:16px 20px;border-top:1px solid var(--border-color);">
         <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Logged in as Admin</div>
@@ -141,7 +142,7 @@
         <div style="display:flex;gap:10px;align-items:center;">
           <button class="dark-toggle" id="darkModeToggle"></button>
           <a href="shop.html" class="btn btn-ghost btn-sm"><i class="fas fa-store"></i> View Shop</a>
-          <button class="btn btn-danger btn-sm" onclick="confirmFactoryReset()"><i class="fas fa-trash"></i> Factory Reset</button>
+          <button class="btn btn-warning btn-sm" onclick="confirmPromoteYear()"><i class="fas fa-arrow-up"></i> Promote Year</button>
         </div>
       </div>
 
@@ -263,11 +264,23 @@
         </div>
       </div>
 
-      <!-- Live Chat -->
+      <!-- Reviews -->
+      <div id="admin-reviews" class="admin-section">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">⭐ Platform Reviews</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadAdminReviews()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="admin-card-body" id="reviewsContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Helpdesk -->
       <div id="admin-livechat" class="admin-section">
         <div class="admin-card">
           <div class="admin-card-header">
-            <div class="admin-card-title">💬 Live Chat — User Messages</div>
+            <div class="admin-card-title">💬 Helpdesk — User Messages</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-right:auto;margin-left:12px;">Messages are read & replied ASAP by admin.</div>
             <button class="btn btn-ghost btn-sm" onclick="loadLiveChat()"><i class="fas fa-sync"></i> Refresh</button>
           </div>
           <div class="admin-card-body" style="padding:20px;">
@@ -513,9 +526,15 @@
       const products = await API.get('/products/all');
       const el = document.getElementById('inventoryContent');
       if (!products.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No live products</p>'; return; }
-      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
-        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Qty</th><th>Seller</th><th>Rating</th><th>Action</th></tr></thead>
-        <tbody>${products.map(p => `
+      
+      const byCat = {};
+      products.forEach(p => { if (!byCat[p.category]) byCat[p.category] = []; byCat[p.category].push(p); });
+      
+      el.innerHTML = Object.keys(byCat).sort().map(cat => `
+        <h4 style="text-transform:capitalize;margin:16px 0 8px;font-weight:800;color:var(--text-secondary);border-bottom:1px solid var(--border-color);padding-bottom:4px;">${cat} (${byCat[cat].length})</h4>
+        <div style="overflow-x:auto;"><table class="data-table" style="margin-bottom:20px;">
+        <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Seller</th><th>Rating</th><th>Action</th></tr></thead>
+        <tbody>${byCat[cat].map(p => `
           <tr>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
@@ -523,14 +542,14 @@
                 <div style="font-weight:700;font-size:0.87rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.title}</div>
               </div>
             </td>
-            <td style="text-transform:capitalize;font-size:0.85rem;">${p.category}</td>
             <td style="font-weight:800;color:var(--accent-primary);">₹${p.price.toLocaleString()}</td>
             <td style="font-weight:700;">${p.quantity}</td>
             <td style="font-size:0.85rem;">${p.seller_name}</td>
             <td><i class="fas fa-star" style="color:#f59e0b;font-size:0.8rem;"></i> ${(p.rating||4.5).toFixed(1)}</td>
             <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button></td>
           </tr>`).join('')}
-        </tbody></table></div>`;
+        </tbody></table></div>`
+      ).join('');
     } catch(e) { document.getElementById('inventoryContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
   }
 
@@ -546,9 +565,16 @@
     try {
       const users = await API.get('/admin/users');
       const el = document.getElementById('communityContent');
-      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
-        <thead><tr><th>Name</th><th>Roll No</th><th>Branch</th><th>Year</th><th>Phone</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
-        <tbody>${users.filter(u => u.role !== 'admin').map(u => `
+      const nonAdmins = users.filter(u => u.role !== 'admin');
+      
+      const byRole = { buyer: [], seller: [] };
+      nonAdmins.forEach(u => byRole[u.role].push(u));
+      
+      el.innerHTML = ['buyer', 'seller'].map(role => `
+        <h4 style="text-transform:capitalize;margin:16px 0 8px;font-weight:800;color:var(--text-secondary);border-bottom:1px solid var(--border-color);padding-bottom:4px;">${role}s (${byRole[role].length})</h4>
+        <div style="overflow-x:auto;"><table class="data-table" style="margin-bottom:20px;">
+        <thead><tr><th>Name</th><th>Roll No</th><th>Branch</th><th>Year</th><th>Phone</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody>${byRole[role].map(u => `
           <tr>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
@@ -560,11 +586,11 @@
             <td style="font-size:0.85rem;">${u.branch}</td>
             <td style="font-size:0.85rem;">${u.year}</td>
             <td style="font-size:0.85rem;">${u.phone}</td>
-            <td><span class="badge ${u.role==='seller' ? 'badge-approved' : 'badge-condition'}">${u.role}</span></td>
             <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(u.registered_at).toLocaleDateString()}</td>
             <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${u.roll_number}','${u.name}')"><i class="fas fa-user-times"></i></button></td>
           </tr>`).join('')}
-        </tbody></table></div>`;
+        </tbody></table></div>`
+      ).join('');
     } catch(e) { document.getElementById('communityContent').innerHTML = '<p style="text-align:center;padding:40px;color:var(--accent-red);">Failed to load</p>'; }
   }
 
@@ -590,11 +616,11 @@
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:24px;">
           <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
             <div style="font-size:2.2rem;font-weight:800;color:var(--accent-green);">₹${(e.listing_fees||0).toLocaleString()}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Listing Fees</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Seller Fees (Listing)</div>
           </div>
           <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
             <div style="font-size:2.2rem;font-weight:800;color:var(--accent-primary);">₹${(e.service_fees||0).toLocaleString()}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Service Fees</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Buyer Fees (Service)</div>
           </div>
           <div style="background:var(--bg-primary);border-radius:16px;padding:24px;text-align:center;">
             <div style="font-size:2.2rem;font-weight:800;color:var(--accent-gold);">₹${(e.extra_charges||0).toLocaleString()}</div>
@@ -613,7 +639,7 @@
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('admin-' + section).classList.add('active');
     event.currentTarget.classList.add('active');
-    const titles = { overview:'Overview', approvals:'Pending Approvals', orders:'All Orders', inventory:'Live Inventory', community:'Community Directory', earnings:'Platform Earnings', analytics:'Analytics Dashboard', discounts:'Discounts & Coupons', livechat:'Live Chat' };
+    const titles = { overview:'Overview', approvals:'Pending Approvals', orders:'All Orders', inventory:'Live Inventory', community:'Community Directory', earnings:'Platform Earnings', analytics:'Analytics Dashboard', discounts:'Discounts & Coupons', livechat:'Helpdesk', reviews:'Platform Reviews' };
     document.getElementById('adminPageTitle').textContent = titles[section] || section;
     // Load data for section
     if (section === 'orders') loadOrders();
@@ -624,17 +650,18 @@
     else if (section === 'analytics') loadAnalytics();
     else if (section === 'discounts') loadDiscounts();
     else if (section === 'livechat') loadLiveChat();
+    else if (section === 'reviews') loadAdminReviews();
   }
 
-  function confirmFactoryReset() {
-    document.getElementById('confirmTitle').textContent = '🔴 Factory Reset';
-    document.getElementById('confirmMsg').textContent = 'This will delete ALL orders, products, and non-admin users. This action CANNOT be undone. Are you absolutely sure?';
+  function confirmPromoteYear() {
+    document.getElementById('confirmTitle').textContent = '⬆️ Promote All Students';
+    document.getElementById('confirmMsg').textContent = 'This will automatically advance all student accounts by one year. This action CANNOT be undone. Are you absolutely sure?';
     document.getElementById('confirmActionBtn').onclick = async () => {
       try {
-        await API.post('/admin/reset', {});
-        showToast('Factory reset complete', 'info');
+        await API.put('/admin/promote-all-years', {});
+        showToast('All students advanced to the next year!', 'success');
         closeModal('confirmModal');
-        loadStats();
+        if (document.getElementById('admin-community').classList.contains('active')) loadCommunity();
       } catch(err) { showToast(err.message, 'error'); }
     };
     openModal('confirmModal');
@@ -708,15 +735,19 @@
     try { await API.delete(`/coupons/${id}`); await loadDiscounts(); showToast('Coupon deleted', 'info'); } catch(err) { showToast(err.message,'error'); }
   }
 
-  // ─── Live Chat ────────────────────────────────────────────────
+  // ─── Helpdesk ────────────────────────────────────────────────
   async function loadLiveChat() {
     try {
-      const msgs = await API.get('/chat/all');
+      const msgs = await API.get('/chat');
       const el = document.getElementById('chatThreads');
       if (!msgs.length) { el.innerHTML = '<p style="text-align:center;padding:30px;color:var(--text-muted);">No messages from users yet</p>'; return; }
       // Group by sender
       const byUser = {};
-      msgs.forEach(m => { if (!byUser[m.roll_number]) byUser[m.roll_number] = { name: m.sender_name, roll: m.roll_number, messages: [] }; byUser[m.roll_number].messages.push(m); });
+      msgs.forEach(m => {
+        const rName = m.user_roll; // using roll as unique identifier
+        if (!byUser[rName]) byUser[rName] = { name: m.user_name, roll: m.user_roll, messages: [] };
+        byUser[rName].messages.push(m);
+      });
       el.innerHTML = Object.values(byUser).map(u => `
         <div style="background:var(--bg-primary);border-radius:14px;padding:16px;margin-bottom:12px;">
           <div style="font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;">
@@ -741,6 +772,35 @@
       document.getElementById('chatAdminMsg').value = '';
       await loadLiveChat();
     } catch(err) { showToast(err.message, 'error'); }
+  }
+  // ─── Platform Reviews ─────────────────────────────────────────
+  async function loadAdminReviews() {
+    try {
+      const reviews = await API.get('/admin/reviews');
+      const el = document.getElementById('reviewsContent');
+      if (!reviews.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted);">No reviews yet.</p>'; return; }
+      el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>Product</th><th>Reviewer</th><th>Rating</th><th>Comment</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody>${reviews.map(r => `
+          <tr>
+            <td style="font-weight:700;font-size:0.87rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.product_title}</td>
+            <td><div style="font-weight:700;">${r.reviewer_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${r.reviewer_roll}</div></td>
+            <td style="color:#f59e0b;font-size:0.9rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+            <td style="max-width:250px;font-size:0.85rem;white-space:normal;word-break:break-word;">${r.comment||'<i style="color:var(--text-muted)">No comment</i>'}</td>
+            <td style="font-size:0.8rem;color:var(--text-muted);">${new Date(r.created_at).toLocaleDateString()}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteReviewAdmin(${r.id})"><i class="fas fa-trash"></i></button></td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+    } catch(e) { document.getElementById('reviewsContent').innerHTML = '<p style="color:var(--accent-red);text-align:center;">Failed to load reviews</p>'; }
+  }
+
+  async function deleteReviewAdmin(id) {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await API.delete(`/reviews/${id}`);
+      showToast('Review deleted', 'info');
+      await loadAdminReviews();
+    } catch (err) { showToast(err.message, 'error'); }
   }
 </script>
 </body>

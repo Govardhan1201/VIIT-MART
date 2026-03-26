@@ -822,23 +822,51 @@ async function loadRelated(currentId, category) {
       <div class="chat-msg theirs">👋 Need help? Ask us anything!<div class="chat-msg-time">Support</div></div>
     </div>
     <div class="chat-input-row">
-      <input type="text" id="chatInp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
-      <button class="chat-send-btn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+      <input type="text" id="chatInp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendShopChat()">
+      <button class="chat-send-btn" onclick="sendShopChat()"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
-  <button class="chat-bubble" onclick="document.getElementById('chatPanel').classList.toggle('open')"><i class="fas fa-comment-dots"></i></button>
+  <button class="chat-bubble" onclick="toggleShopChat()"><i class="fas fa-comment-dots"></i></button>
 </div>
 <script>
-async function sendChat() {
+function toggleShopChat() {
+  const panel = document.getElementById('chatPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('chatInp').focus();
+    loadShopChatMsgs();
+  }
+}
+async function loadShopChatMsgs() {
+  try {
+    const user = Auth.getUser();
+    if (!user) return;
+    const msgs = await API.get('/chat');
+    const area = document.getElementById('chatMsgs');
+    if (!msgs.length) return;
+    area.innerHTML = msgs.map(m => `<div class="chat-msg ${m.is_admin ? 'theirs' : 'mine'}" id="msg-${m.id}">${m.message}<div class="chat-msg-time">${m.is_admin ? 'Support' : 'You'} · ${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${!m.is_admin ? ` <span style="cursor:pointer;color:var(--accent-red);margin-left:8px;" onclick="unsendShopChat(${m.id})" title="Unsend"><i class="fas fa-trash"></i></span>` : ''}</div></div>`).join('');
+    area.scrollTop = area.scrollHeight;
+  } catch { }
+}
+async function sendShopChat() {
   const user = Auth.getUser();
   const inp = document.getElementById('chatInp');
   const msg = inp.value.trim(); if (!msg) return;
   if (!user) { showToast('Login to chat','error'); return; }
   inp.value = '';
-  const area = document.getElementById('chatMsgs');
-  area.innerHTML += `<div class="chat-msg mine">${msg}<div class="chat-msg-time">You · now</div></div>`;
-  area.scrollTop = area.scrollHeight;
-  try { await API.post('/chat', { message: msg }); } catch{}
+  try { 
+    const res = await API.post('/chat', { message: msg }); 
+    const area = document.getElementById('chatMsgs');
+    area.innerHTML += `<div class="chat-msg mine" id="msg-${res.id}">${msg}<div class="chat-msg-time">You · just now <span style="cursor:pointer;color:var(--accent-red);margin-left:8px;" onclick="unsendShopChat(${res.id})" title="Unsend"><i class="fas fa-trash"></i></span></div></div>`;
+    area.scrollTop = area.scrollHeight;
+  } catch { showToast('Failed to send message', 'error'); }
+}
+async function unsendShopChat(id) {
+  if(!confirm('Unsend this message?')) return;
+  try {
+    await API.delete('/chat/' + id);
+    document.getElementById('msg-'+id)?.remove();
+  } catch(e) { showToast(e.message, 'error'); }
 }
 </script>
 </body>
