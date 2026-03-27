@@ -9,7 +9,35 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
 const path = require('path');
+
+// ─── Resend Email Client ───────────────────────────────────────────────────────────────
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+async function sendEmail({ to, subject, html }) {
+  if (!process.env.RESEND_API_KEY || !to) return;
+  try {
+    await resend.emails.send({
+      from: 'VIIT Mart <onboarding@resend.dev>', // Use resend.dev until your domain is verified
+      to,
+      subject,
+      html
+    });
+  } catch (e) {
+    console.warn('Email send failed:', e.message);
+  }
+}
+
+// ─── Cloudinary Setup ──────────────────────────────────────────────────────────────────
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -296,6 +324,26 @@ app.post('/api/auth/register',
     res
       .cookie('vm_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000, secure: process.env.NODE_ENV === 'production' })
       .json({ token, user }); // also return token in body for localStorage fallback
+
+    // Send welcome email (fire and forget, don't block response)
+    if (email) {
+      sendEmail({
+        to: email,
+        subject: '🎉 Welcome to VIIT Mart!',
+        html: `
+          <div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;background:#0f0f1a;color:#e2e8f0;border-radius:12px;">
+            <h2 style="color:#6c63ff;">Welcome to VIIT Mart, ${name}! 🛒</h2>
+            <p>Your account has been created successfully.</p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+              <tr><td style="padding:6px 0;color:#94a3b8;">Roll Number</td><td style="font-weight:700;">${rollNumber}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Role</td><td style="font-weight:700;text-transform:capitalize;">${role}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Branch</td><td style="font-weight:700;">${branch}, Year ${year}</td></tr>
+            </table>
+            <a href="https://viit-mart.onrender.com/shop" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Browse Shop →</a>
+            <p style="margin-top:24px;font-size:0.8rem;color:#475569;">VIIT Mart — Campus Marketplace</p>
+          </div>`
+      });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -520,16 +568,86 @@ app.post('/api/orders', authenticate, async (req, res) => {
       }
       await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
         [product.seller_roll, '🛒 New Order!', `Someone ordered your "${product.title}". Check your dashboard.`]);
-      if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
-        [admin.roll_number, '📦 New Order', `${req.user.name} ordered "${product.title}" (₹${totalPaid})`]);
+      io.to(`user:${product.seller_roll}`).emit('notification:new');
+      if (admin) {
+        await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
+          [admin.roll_number, '📦 New Order', `${req.user.name} ordered "${product.title}" (₹${totalPaid})`]);
+        io.to(`user:${admin.roll_number}`).emit('notification:new');
+      }
       await db.run('UPDATE earnings SET service_fees=service_fees+?, listing_fees=listing_fees+?, total=total+? WHERE id=1',
         [serviceFee, LISTING_FEE, serviceFee + LISTING_FEE]);
-      createdOrders.push(orderId);
+        
+      createdOrders.push({ id: orderId, title: product.title, price: product.price, sellerRoll: product.seller_roll });
     }
     await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)',
       [req.user.rollNumber, '✅ Order Placed!', `Your order has been placed successfully and is pending seller confirmation.`]);
-    res.json({ success: true, orderIds: createdOrders });
+    io.to(`user:${req.user.rollNumber}`).emit('notification:new');
+
+    // ─── EMAILS ──────────────────────────────────────────────────────────────
+    if (createdOrders.length > 0) {
+      // 1. Send Order Confirmation Email to Buyer
+      if (req.user.email) {
+        let itemsHtml = createdOrders.map(o => `<li>${o.title} - ₹${o.price}</li>`).join('');
+        sendEmail({
+          to: req.user.email,
+          subject: '📦 Order Confirmation - VIIT Mart',
+          html: `<div style="font-family:sans-serif;padding:20px;background:#0f0f1a;color:#e2e8f0;border-radius:12px;max-width:500px;margin:auto;">
+            <h2 style="color:#6c63ff;">Thank you for your order, ${req.user.name.split(' ')[0]}!</h2>
+            <p>Your order has been placed successfully.</p>
+            <h3>Order Details:</h3><ul>${itemsHtml}</ul>
+            <p>You can track the status in your Buyer Dashboard.</p>
+          </div>`
+        });
+      }
+      // 2. Send Notification Emails to Sellers
+      for (const order of createdOrders) {
+        const seller = await db.get('SELECT email, name FROM users WHERE roll_number = ?', [order.sellerRoll]);
+        if (seller && seller.email) {
+          sendEmail({
+            to: seller.email,
+            subject: `🛒 New Order Received: ${order.title}`,
+            html: `<div style="font-family:sans-serif;padding:20px;background:#0f0f1a;color:#e2e8f0;border-radius:12px;max-width:500px;margin:auto;">
+              <h2 style="color:#10b981;">Great news, ${seller.name.split(' ')[0]}!</h2>
+              <p>You just received a new order for <b>${order.title}</b>.</p>
+              <p><strong>Buyer:</strong> ${req.user.name}<br><strong>Phone:</strong> ${req.user.phone}</p>
+              <p>Please check your seller dashboard for details and prepare the item for fulfillment.</p>
+            </div>`
+          });
+        }
+      }
+    }
+
+    res.json({ success: true, orderIds: createdOrders.map(o => o.id) });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── CLOUDINARY UPLOAD ──────────────────────────────────────────────────────────
+app.post('/api/upload', authenticate, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image provided' });
+    if (!process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME === 'your_cloud_name_here') {
+       return res.status(500).json({ error: 'Cloudinary credentials missing' });
+    }
+    
+    const cloudinaryUpload = () => new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'viitmart' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      const s = require('stream');
+      const pass = new s.PassThrough();
+      pass.end(req.file.buffer);
+      pass.pipe(stream);
+    });
+    
+    const result = await cloudinaryUpload();
+    res.json({ success: true, url: result.secure_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/orders/:id/status', requireAdmin, async (req, res) => {

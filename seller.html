@@ -191,30 +191,24 @@
       document.getElementById('charCount').textContent = `${this.value.length} / 200`;
     });
 
-    let uploadedImagesBase64 = [];
-    document.getElementById('pImageFile').addEventListener('change', async function(e) {
+    let selectedFiles = [];
+    document.getElementById('pImageFile').addEventListener('change', function(e) {
       const files = Array.from(e.target.files);
       if (files.length > 5) {
         showToast('Maximum 5 images allowed', 'error');
         this.value = '';
-        uploadedImagesBase64 = [];
+        selectedFiles = [];
         return;
       }
-      uploadedImagesBase64 = [];
       for (const file of files) {
         if (file.size > 5 * 1024 * 1024) { 
           showToast('Each image must be under 5MB', 'error'); 
           this.value = ''; 
-          uploadedImagesBase64 = []; 
+          selectedFiles = []; 
           return; 
         }
-        const dataUrl = await new Promise(r => {
-          const reader = new FileReader();
-          reader.onload = evt => r(evt.target.result);
-          reader.readAsDataURL(file);
-        });
-        uploadedImagesBase64.push(dataUrl);
       }
+      selectedFiles = files;
     });
 
     await Promise.all([loadProducts(), loadOrders(), loadNotifications(), loadEarnings()]);
@@ -332,10 +326,27 @@
   async function submitProduct(e) {
     e.preventDefault();
     const btn = document.getElementById('sellBtn');
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading Images...';
     try {
-      if (!uploadedImagesBase64 || uploadedImagesBase64.length === 0) throw new Error('Please select at least one image file');
+      if (!selectedFiles || selectedFiles.length === 0) throw new Error('Please select at least one image file');
 
+      // Upload files to Cloudinary
+      const uploadedUrls = [];
+      const token = localStorage.getItem('vm_token');
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch(API_BASE === '/api' ? '/api/upload' : 'http://localhost:3000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Image upload failed');
+        uploadedUrls.push(data.url);
+      }
+
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
       await API.post('/products', {
         title: document.getElementById('pTitle').value,
         category: document.getElementById('pCategory').value,
@@ -344,7 +355,7 @@
         originalPrice: document.getElementById('pOriginal').value || null,
         quantity: parseInt(document.getElementById('pQty').value),
         description: document.getElementById('pDesc').value,
-        imageUrls: uploadedImagesBase64,
+        imageUrls: uploadedUrls,
         location: document.getElementById('pLocation').value
       });
       showToast('Product submitted for admin approval! 🎉', 'success');
