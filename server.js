@@ -1,21 +1,52 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server: SocketServer } = require('socket.io');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const { body, validationResult } = require('express-validator');
 const path = require('path');
 
 const app = express();
+const httpServer = http.createServer(app);
+const io = new SocketServer(httpServer, {
+  cors: { origin: process.env.ALLOWED_ORIGIN || '*', credentials: true }
+});
+
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'viitmart-secret';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'ADMIN2025';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin123';
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+app.use(helmet({ contentSecurityPolicy: false })); // disable CSP for inline scripts
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow requests from the configured origin, localhost, or same-origin (no `origin` header)
+    const allowed = [ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
+    if (!origin || allowed.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
+
+// Rate limiter: max 10 login attempts per 15 min per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
 const { createClient } = require('@libsql/client');
@@ -30,18 +61,15 @@ console.log('✅ Database Connected →', process.env.TURSO_DATABASE_URL ? 'Clou
 // Wrapper mapping Turso's API identically to our previous sqlite3 implementation
 const db = {
   get: async (sql, params = []) => {
-    const args = Array.isArray(params) ? params : [params];
-    const rs = await client.execute({ sql, args });
+    const rs = await client.execute({ sql, args: params });
     return rs.rows[0];
   },
   all: async (sql, params = []) => {
-    const args = Array.isArray(params) ? params : [params];
-    const rs = await client.execute({ sql, args });
+    const rs = await client.execute({ sql, args: params });
     return rs.rows;
   },
   run: async (sql, params = []) => {
-    const args = Array.isArray(params) ? params : [params];
-    const rs = await client.execute({ sql, args });
+    const rs = await client.execute({ sql, args: params });
     return { lastID: Number(rs.lastInsertRowid), changes: rs.rowsAffected };
   },
   exec: async (sql) => {
@@ -168,6 +196,21 @@ async function initDb() {
       is_admin INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_roll TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT DEFAULT 'info',
+      is_read INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS otp_store (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      roll_number TEXT NOT NULL,
+      otp TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
   try { await db.exec("ALTER TABLE products ADD COLUMN images_json TEXT DEFAULT '[]'"); } catch(e) {}
   await db.run('INSERT OR IGNORE INTO earnings (id) VALUES (1)');
@@ -201,9 +244,11 @@ async function initDb() {
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 function authenticate(req, res, next) {
+  // Support both httpOnly cookie and Authorization: Bearer header (legacy)
+  const cookieToken = req.cookies && req.cookies.vm_token;
   const header = req.headers.authorization;
-  if (!header) return res.status(401).json({ error: 'No token provided' });
-  const token = header.split(' ')[1];
+  const token = cookieToken || (header ? header.split(' ')[1] : null);
+  if (!token) return res.status(401).json({ error: 'No token provided' });
   try {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
@@ -220,7 +265,14 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── AUTH ROUTES ──────────────────────────────────────────────────────────────
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register',
+  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('rollNumber').trim().isLength({ min: 6 }).withMessage('Invalid roll number'),
+  body('phone').trim().isLength({ min: 10, max: 10 }).withMessage('Phone must be 10 digits'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
   try {
     const { name, rollNumber, branch, year, phone, email, password, role } = req.body;
     if (!name || !rollNumber || !branch || !year || !phone || !password || !role)
@@ -241,13 +293,20 @@ app.post('/api/auth/register', async (req, res) => {
     );
     const user = { id: result.lastID, name, rollNumber, branch, year, phone, email: email || '', role };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user });
+    res
+      .cookie('vm_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000, secure: process.env.NODE_ENV === 'production' })
+      .json({ token, user }); // also return token in body for localStorage fallback
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter,
+  body('rollNumber').trim().notEmpty().withMessage('Roll number required'),
+  body('password').notEmpty().withMessage('Password required'),
+  async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
   try {
     const { rollNumber, phone, password, role } = req.body;
     const dbUser = await db.get('SELECT * FROM users WHERE roll_number = ? AND phone = ? AND role = ?', [rollNumber, phone, role]);
@@ -258,13 +317,15 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = { id: dbUser.id, name: dbUser.name, rollNumber: dbUser.roll_number, branch: dbUser.branch, year: dbUser.year, phone: dbUser.phone, email: dbUser.email, role: dbUser.role };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user });
+    res
+      .cookie('vm_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 30*24*60*60*1000, secure: process.env.NODE_ENV === 'production' })
+      .json({ token, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/auth/admin-login', async (req, res) => {
+app.post('/api/auth/admin-login', loginLimiter, async (req, res) => {
   try {
     const { secretCode, password } = req.body;
     if (secretCode !== ADMIN_SECRET || password !== ADMIN_PASSWORD)
@@ -281,7 +342,9 @@ app.post('/api/auth/admin-login', async (req, res) => {
     }
     const user = { id: adminUser.id, name: adminUser.name, rollNumber: adminUser.roll_number, phone: adminUser.phone, email: adminUser.email, role: 'admin' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, user });
+    res
+      .cookie('vm_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 8*60*60*1000, secure: process.env.NODE_ENV === 'production' })
+      .json({ token, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -747,10 +810,155 @@ app.post('/api/chat/admin-reply', requireAdmin, async (req, res) => {
   try {
     const { targetRoll, message } = req.body;
     if (!targetRoll || !message) return res.status(400).json({ error: 'Roll and message required' });
-    await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
+    const result = await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
       [targetRoll, req.user.name, message, 1]);
+    // Emit to the user's Socket.io room in real-time
+    io.to(`user:${targetRoll}`).emit('chat:message', {
+      id: result.lastID, user_roll: targetRoll, user_name: req.user.name,
+      message, is_admin: 1, created_at: new Date().toISOString()
+    });
+    // Fire a notification to the user
+    await db.run('INSERT INTO notifications (user_roll,message,type) VALUES (?,?,?)',
+      [targetRoll, `Support replied: "${message.slice(0,60)}"`, 'chat']);
+    io.to(`user:${targetRoll}`).emit('notification:new');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── NOTIFICATIONS API ──────────────────────────────────────────────────────────
+app.get('/api/notifications', authenticate, async (req, res) => {
+  try {
+    const notifs = await db.all(
+      'SELECT * FROM notifications WHERE user_roll = ? ORDER BY created_at DESC LIMIT 30',
+      [req.user.rollNumber]
+    );
+    res.json(notifs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/notifications/read', authenticate, async (req, res) => {
+  try {
+    await db.run('UPDATE notifications SET is_read=1 WHERE user_roll=?', [req.user.rollNumber]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/notifications', requireAdmin, async (req, res) => {
+  try {
+    const { userRoll, message, type } = req.body;
+    if (!userRoll || !message) return res.status(400).json({ error: 'userRoll and message required' });
+    await db.run('INSERT INTO notifications (user_roll,message,type) VALUES (?,?,?)',
+      [userRoll, message, type || 'info']);
+    io.to(`user:${userRoll}`).emit('notification:new');
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── LOGOUT ─────────────────────────────────────────────────────────────────────────
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('vm_token').json({ success: true });
+});
+
+// ─── PASSWORD RESET (OTP-based) ────────────────────────────────────────────────────
+app.post('/api/auth/forgot-password/request', async (req, res) => {
+  try {
+    const { rollNumber, phone } = req.body;
+    if (!rollNumber || !phone) return res.status(400).json({ error: 'Roll number and phone required' });
+    const user = await db.get('SELECT id FROM users WHERE roll_number = ? AND phone = ?', [rollNumber, phone]);
+    if (!user) return res.status(404).json({ error: 'No account found with that roll number and phone' });
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+    await db.run('DELETE FROM otp_store WHERE roll_number = ?', [rollNumber]);
+    await db.run('INSERT INTO otp_store (roll_number,otp,expires_at) VALUES (?,?,?)', [rollNumber, otp, expires]);
+    // In a real deployment this OTP would be sent via SMS/email.
+    // For now, return it in the response (dev mode).
+    res.json({ success: true, otp, message: 'OTP generated. In production this would be sent via SMS.' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/forgot-password/reset', async (req, res) => {
+  try {
+    const { rollNumber, otp, newPassword } = req.body;
+    if (!rollNumber || !otp || !newPassword) return res.status(400).json({ error: 'All fields required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    const record = await db.get('SELECT * FROM otp_store WHERE roll_number = ?', [rollNumber]);
+    if (!record || record.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+    if (new Date(record.expires_at) < new Date()) return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.run('UPDATE users SET password_hash = ? WHERE roll_number = ?', [hash, rollNumber]);
+    await db.run('DELETE FROM otp_store WHERE roll_number = ?', [rollNumber]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── PDF INVOICE ────────────────────────────────────────────────────────────────────
+app.get('/api/orders/:id/invoice', authenticate, async (req, res) => {
+  try {
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    // Only allow the buyer or admin to download the invoice
+    if (req.user.role !== 'admin' && req.user.rollNumber !== order.buyer_roll)
+      return res.status(403).json({ error: 'Access denied' });
+
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.id}.pdf`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(24).font('Helvetica-Bold').text('VIIT Mart', 50, 50);
+    doc.fontSize(10).font('Helvetica').text('Campus Marketplace • VIIT Pune', 50, 80);
+    doc.moveTo(50, 100).lineTo(545, 100).stroke();
+
+    // Invoice details
+    doc.fontSize(18).font('Helvetica-Bold').text('INVOICE', 50, 115);
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Invoice #: INV-${String(order.id).padStart(5,'0')}`, 50, 145);
+    doc.text(`Date: ${new Date(order.created_at).toLocaleDateString('en-IN')}`, 50, 160);
+    doc.text(`Payment Method: ${order.payment_method}`, 50, 175);
+    doc.text(`Status: ${order.status.toUpperCase()}`, 50, 190);
+
+    // Buyer
+    doc.moveDown();
+    doc.font('Helvetica-Bold').text('Billed To:');
+    doc.font('Helvetica').text(order.buyer_name);
+    doc.text(`Phone: ${order.buyer_phone}`);
+
+    // Product table
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.5);
+    doc.font('Helvetica-Bold').text('Product', 50, doc.y, { width: 280 });
+    doc.text('Qty', 340, doc.y - doc.currentLineHeight(), { width: 60 });
+    doc.text('Amount', 450, doc.y - doc.currentLineHeight(), { width: 90 });
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.5);
+    doc.font('Helvetica').text(order.product_title, 50, doc.y, { width: 280 });
+    doc.text(String(order.quantity || 1), 340, doc.y - doc.currentLineHeight(), { width: 60 });
+    doc.text(`Rs. ${Number(order.total_paid).toLocaleString('en-IN')}`, 450, doc.y - doc.currentLineHeight(), { width: 90 });
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.5);
+    doc.font('Helvetica-Bold').text(`Total: Rs. ${Number(order.total_paid).toLocaleString('en-IN')}`, { align: 'right' });
+
+    doc.moveDown(2);
+    doc.font('Helvetica').fontSize(9).text('Thank you for shopping on VIIT Mart!', { align: 'center' });
+    doc.end();
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── SOCKET.IO Real-time Chat ──────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+  socket.on('auth', (token) => {
+    try {
+      const user = jwt.verify(token, JWT_SECRET);
+      socket.userRoll = user.rollNumber;
+      socket.join(`user:${user.rollNumber}`);
+      if (user.role === 'admin') socket.join('admin');
+    } catch {}
+  });
 });
 
 // ─── BEST SELLERS (sorted by order count) ────────────────────────────────────
@@ -776,12 +984,12 @@ app.get('/viitmart-admin-portal', (req, res) => res.sendFile(path.join(__dirname
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 initDb().then(() => {
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`\n🎓 VIIT Mart is LIVE at http://localhost:${PORT}`);
     console.log(`   → Home:   http://localhost:${PORT}/`);
     console.log(`   → Shop:   http://localhost:${PORT}/shop`);
     console.log(`   → Admin:  http://localhost:${PORT}/viitmart-admin-portal`);
-    console.log(`\n   Admin credentials: Secret=ADMIN2025 | Password=Admin123\n`);
+    console.log(`\n   Admin credentials: Secret=${ADMIN_SECRET} | Password=${ADMIN_PASSWORD}\n`);
   });
 }).catch(err => {
   console.error('❌ Failed to initialize database:', err.message);
