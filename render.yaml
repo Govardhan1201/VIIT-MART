@@ -12,3 +12,11 @@ services:
         value: libsql://viitmart-hulkbuster.aws-ap-south-1.turso.io
       - key: TURSO_AUTH_TOKEN
         value: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzQ0OTEwNTIsImlkIjoiMDE5ZDI3ZTgtNzMwMS03NDMwLWEyZGMtZDk0YWI5NzU3ZWMwIiwicmlkIjoiMmM2NmI0MTktM2JlNC00ZDcwLTg2YmQtMDdiOTRkYWNiMjQ1In0.hipcfx-OEj-Xh35GQV0H0RJ5Tz8gmhmAgkuupgCXh968CBLCp--mftkMcUf1nkXh05CCmHqhq1SYsKUvr4_NDw
+      - key: RESEND_API_KEY
+        value: re_RpQ9xkb1_kCqsowURnvAW64bLdfudshKM
+      - key: CLOUDINARY_CLOUD_NAME
+        value: df0xs33u1
+      - key: CLOUDINARY_API_KEY
+        value: '937261978734223'
+      - key: CLOUDINARY_API_SECRET
+        value: ycRd4RJMJump7lxgKZ2CtzCv8Ig
