@@ -55,8 +55,8 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
 app.use(helmet({ contentSecurityPolicy: false })); // disable CSP for inline scripts
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests from the configured origin, localhost, or same-origin (no `origin` header)
-    const allowed = [ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'];
+    // Allow requests from the configured origin, localhost, Render domain, or same-origin (no `origin` header)
+    const allowed = [ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://viit-mart.onrender.com'];
     if (!origin || allowed.includes(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
@@ -110,14 +110,15 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      roll_number TEXT UNIQUE NOT NULL,
+      roll_number TEXT NOT NULL,
       branch TEXT NOT NULL,
       year TEXT NOT NULL,
       phone TEXT NOT NULL,
       email TEXT DEFAULT '',
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'buyer',
-      registered_at TEXT DEFAULT (datetime('now'))
+      registered_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(roll_number, role)
     );
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
