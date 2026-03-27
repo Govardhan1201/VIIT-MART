@@ -30,15 +30,18 @@ console.log('✅ Database Connected →', process.env.TURSO_DATABASE_URL ? 'Clou
 // Wrapper mapping Turso's API identically to our previous sqlite3 implementation
 const db = {
   get: async (sql, params = []) => {
-    const rs = await client.execute({ sql, args: params });
+    const args = Array.isArray(params) ? params : [params];
+    const rs = await client.execute({ sql, args });
     return rs.rows[0];
   },
   all: async (sql, params = []) => {
-    const rs = await client.execute({ sql, args: params });
+    const args = Array.isArray(params) ? params : [params];
+    const rs = await client.execute({ sql, args });
     return rs.rows;
   },
   run: async (sql, params = []) => {
-    const rs = await client.execute({ sql, args: params });
+    const args = Array.isArray(params) ? params : [params];
+    const rs = await client.execute({ sql, args });
     return { lastID: Number(rs.lastInsertRowid), changes: rs.rowsAffected };
   },
   exec: async (sql) => {
