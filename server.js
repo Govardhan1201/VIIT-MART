@@ -304,7 +304,7 @@ app.post('/api/auth/register',
   body('rollNumber').trim().isLength({ min: 6 }).withMessage('Invalid roll number'),
   body('phone').trim().isLength({ min: 10, max: 10 }).withMessage('Phone must be 10 digits'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').matches(/^(?=.*[A-Z])(?=.*[0-9]).{6,12}$/).withMessage('Password must be 6-12 chars, 1 uppercase, 1 number'),
+  body('password').matches(/^(?=.*[A-Za-z].*[A-Za-z].*[A-Za-z])(?=.*\d.*\d)(?=.*[^A-Za-z0-9\s])\S{6,12}$/).withMessage('Password must have 6-12 chars, 3 alphabets, 2 numbers, 1 special char'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
@@ -442,8 +442,8 @@ app.post('/api/auth/forgot-password/reset', async (req, res) => {
     if (!rollNumber || !otp || !newPassword) return res.status(400).json({ error: 'Missing required parameters' });
     
     // Validate password constraint
-    if (!/^(?=.*[A-Z])(?=.*[0-9]).{6,12}$/.test(newPassword)) {
-      return res.status(400).json({ error: 'Password must be 6-12 chars, 1 uppercase, 1 number' });
+    if (!/^(?=.*[A-Za-z].*[A-Za-z].*[A-Za-z])(?=.*\d.*\d)(?=.*[^A-Za-z0-9\s])\S{6,12}$/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must have 6-12 chars, 3 alphabets, 2 numbers, 1 special char' });
     }
 
     const record = await db.get('SELECT * FROM otp_store WHERE roll_number = ?', [rollNumber]);
