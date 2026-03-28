@@ -11,6 +11,8 @@ const cookieParser = require('cookie-parser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
+const xlsx = require('xlsx');
+const fs = require('fs');
 
 // ─── Resend Email Client ───────────────────────────────────────────────────────────────
 const { Resend } = require('resend');
@@ -245,9 +247,38 @@ async function initDb() {
       expires_at TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS student_data (
+      roll_number TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      branch TEXT NOT NULL,
+      year TEXT NOT NULL
+    );
   `);
   try { await db.exec("ALTER TABLE products ADD COLUMN images_json TEXT DEFAULT '[]'"); } catch(e) {}
   await db.run('INSERT OR IGNORE INTO earnings (id) VALUES (1)');
+
+  // Load NIRVANA data if student_data is empty
+  const studentCount = await db.get('SELECT COUNT(*) as cnt FROM student_data');
+  if (studentCount.cnt === 0 && fs.existsSync('NIRVANA DATA.xlsx')) {
+    console.log('Loading student data from NIRVANA DATA.xlsx...');
+    try {
+      const wb = xlsx.readFile('NIRVANA DATA.xlsx');
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = xlsx.utils.sheet_to_json(ws);
+      console.log(`Found ${data.length} student records. Inserting...`);
+      for (const row of data) {
+        if (row['FULL NAME'] && row['ROLL NO'] && row['YEAR'] && row['BRANCH']) {
+          await db.run(
+            'INSERT OR IGNORE INTO student_data (roll_number, name, branch, year) VALUES (?, ?, ?, ?)',
+            [String(row['ROLL NO']).trim().toUpperCase(), String(row['FULL NAME']).trim(), String(row['BRANCH']).trim().toUpperCase(), String(row['YEAR']).trim()]
+          );
+        }
+      }
+      console.log('✅ Student data loaded successfully.');
+    } catch (err) {
+      console.error('❌ Failed to load student data:', err.message);
+    }
+  }
 
   // Seed sample products on first run
   const count = await db.get('SELECT COUNT(*) as cnt FROM products');
@@ -848,8 +879,15 @@ app.get('/api/admin/reviews', requireAdmin, async (req, res) => {
 // ─── Lookup: auto-fill registration info from existing roll ─────────────────
 app.get('/api/lookup/:roll', async (req, res) => {
   try {
-    const user = await db.get('SELECT name, branch, year, phone FROM users WHERE roll_number = ?', [req.params.roll]);
-    res.json(user || {});
+    const roll = req.params.roll.toUpperCase();
+    const user = await db.get('SELECT name, branch, year, phone FROM users WHERE roll_number = ?', [roll]);
+    if (user) return res.json(user);
+    
+    // Fallback to student tracking data
+    const student = await db.get('SELECT name, branch, year FROM student_data WHERE roll_number = ?', [roll]);
+    if (student) return res.json(student);
+
+    res.json({});
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
