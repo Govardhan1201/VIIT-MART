@@ -65,12 +65,12 @@
       <form id="registerForm" onsubmit="handleRegister(event)">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label required">Full Name</label>
-            <div class="input-wrapper"><i class="fas fa-user input-icon-left"></i><input type="text" id="regName" class="form-control" placeholder="Rajesh Kumar" required></div>
+            <label class="form-label required">Roll Number</label>
+            <div class="input-wrapper"><i class="fas fa-id-badge input-icon-left"></i><input type="text" id="regRoll" class="form-control" placeholder="25L31A0501" maxlength="10" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); autoFillFromRoll(this.value);" required></div>
           </div>
           <div class="form-group">
-            <label class="form-label required">Roll Number</label>
-            <div class="input-wrapper"><i class="fas fa-id-badge input-icon-left"></i><input type="text" id="regRoll" class="form-control" placeholder="25L31A0501" maxlength="10" oninput="autoFillFromRoll(this.value)" required></div>
+            <label class="form-label required">Full Name</label>
+            <div class="input-wrapper"><i class="fas fa-user input-icon-left"></i><input type="text" id="regName" class="form-control" placeholder="Rajesh Kumar" maxlength="30" oninput="this.value = this.value.replace(/^[\s.]+/, '').replace(/[^a-zA-Z\s.]/g, '');" required></div>
           </div>
         </div>
         <div class="form-row">
@@ -102,21 +102,21 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label required">Phone Number</label>
-            <div class="input-wrapper"><i class="fas fa-phone input-icon-left"></i><input type="tel" id="regPhone" class="form-control" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" required></div>
+            <div class="input-wrapper"><i class="fas fa-phone input-icon-left"></i><input type="tel" id="regPhone" class="form-control" placeholder="9876543210" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" pattern="[0-9]{10}" required></div>
           </div>
           <div class="form-group">
-            <label class="form-label">Email (Optional)</label>
-            <div class="input-wrapper"><i class="fas fa-envelope input-icon-left"></i><input type="email" id="regEmail" class="form-control" placeholder="you@viit.ac.in"></div>
+            <label class="form-label required">Email</label>
+            <div class="input-wrapper"><i class="fas fa-envelope input-icon-left"></i><input type="email" id="regEmail" class="form-control" placeholder="you@viit.ac.in" required></div>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label required">Password</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
-            <input type="password" id="regPassword" class="form-control form-control-password" placeholder="Min 6 chars, 1 uppercase, 1 number" required minlength="6">
+            <input type="password" id="regPassword" class="form-control form-control-password" placeholder="6-12 chars, 1 uppercase, 1 number" required minlength="6" maxlength="12">
             <button type="button" class="password-toggle" onclick="togglePassword('regPassword',this)"><i class="fas fa-eye"></i></button>
           </div>
-          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Must have 6+ characters, 1 uppercase letter, 1 number</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Must have 6-12 characters, 1 uppercase letter, 1 number</p>
         </div>
         <button type="submit" class="btn btn-primary btn-full btn-lg" id="regBtn">
           <i class="fas fa-user-plus"></i> Create Account
@@ -167,9 +167,10 @@
     const password = document.getElementById('regPassword').value;
 
     // Validate
-    if (!/[A-Za-z].*[A-Za-z].*[A-Za-z]/.test(name.replace(/\s/g,''))) { showToast('Name needs at least 3 alphabetic characters','error'); return; }
-    if (!/(?=.*[A-Z])(?=.*[0-9]).{6,}/.test(password)) { showToast('Password must have 6+ chars, 1 uppercase & 1 number','error'); return; }
-    if (!/^[0-9]{10}$/.test(document.getElementById('regPhone').value.trim())) { showToast('Phone must be exactly 10 digits','error'); return; }
+    if (!/[A-Za-z]/.test(name)) { showToast('Name needs at least 1 alphabetic character','error'); return; }
+    if (name.length > 30) { showToast('Name cannot exceed 30 characters','error'); return; }
+    if (!/(?=.*[A-Z])(?=.*[0-9]).{6,12}/.test(password) || password.length > 12) { showToast('Password must have 6-12 chars, 1 uppercase & 1 number','error'); return; }
+    if (document.getElementById('regPhone').value.length !== 10) { showToast('Phone must be exactly 10 digits','error'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';

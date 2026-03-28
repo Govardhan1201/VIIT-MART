@@ -120,21 +120,21 @@
           <label class="form-label required">Roll Number</label>
           <div class="input-wrapper">
             <i class="fas fa-id-badge input-icon-left"></i>
-            <input type="text" id="rollNumber" class="form-control" placeholder="e.g., 25L31A0501" maxlength="10" required oninput="this.value = this.value.toUpperCase(); autoFillPhone(this.value)">
+            <input type="text" id="rollNumber" class="form-control" placeholder="e.g., 25L31A0501" maxlength="10" required oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); autoFillPhone(this.value)">
           </div>
         </div>
         <div class="form-group">
           <label class="form-label required">Phone Number</label>
           <div class="input-wrapper">
             <i class="fas fa-phone input-icon-left"></i>
-            <input type="tel" id="phone" class="form-control" placeholder="10 digit mobile number" maxlength="10" pattern="[0-9]{10}" required>
+            <input type="tel" id="phone" class="form-control" placeholder="10 digit mobile number" maxlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label required">Password</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
-            <input type="password" id="password" class="form-control form-control-password" placeholder="Your password" required>
+            <input type="password" id="password" class="form-control form-control-password" placeholder="Your password" required minlength="6" maxlength="12">
             <button type="button" class="password-toggle" onclick="togglePassword('password', this)"><i class="fas fa-eye"></i></button>
           </div>
         </div>
@@ -164,19 +164,32 @@
     <div id="forgotStep1">
       <div class="form-group">
         <label class="form-label">Roll Number</label>
-        <input type="text" id="fRoll" class="form-control" placeholder="21CS001">
+        <div class="input-wrapper">
+          <i class="fas fa-id-badge input-icon-left"></i>
+          <input type="text" id="fRoll" class="form-control" placeholder="e.g. 21CS001" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();">
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Phone Number</label>
-        <input type="tel" id="fPhone" class="form-control" placeholder="9876543210">
+        <div class="input-wrapper">
+          <i class="fas fa-phone input-icon-left"></i>
+          <input type="tel" id="fPhone" class="form-control" placeholder="10-digit number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+        </div>
       </div>
-      <button class="btn btn-primary btn-full" onclick="verifyForgot()">Verify Identity</button>
+      <button class="btn btn-primary btn-full" onclick="verifyForgot(event)">Verify Identity</button>
     </div>
     <div id="forgotStep2" style="display:none;">
       <div class="form-group">
+        <label class="form-label">6-Digit OTP</label>
+        <div class="input-wrapper">
+          <i class="fas fa-key input-icon-left"></i>
+          <input type="text" id="fOtp" class="form-control" placeholder="Sent to your email" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">New Password</label>
         <div class="input-wrapper">
-          <input type="password" id="fNewPwd" class="form-control form-control-password" placeholder="Min 6 chars, uppercase & number">
+          <input type="password" id="fNewPwd" class="form-control form-control-password" placeholder="6-12 chars, uppercase, number" minlength="6" maxlength="12">
           <button type="button" class="password-toggle" onclick="togglePassword('fNewPwd',this)"><i class="fas fa-eye"></i></button>
         </div>
       </div>
@@ -259,38 +272,46 @@
   }
 
 
-  async function verifyForgot() {
+  async function verifyForgot(event) {
     const roll = document.getElementById('fRoll').value.trim();
     const phone = document.getElementById('fPhone').value.trim();
     if (!roll || !phone) { showToast('Enter roll number and phone', 'error'); return; }
+    const btn = event ? event.target : document.querySelector('#forgotStep1 .btn');
+    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...'; }
     try {
-      await API.post('/auth/forgot-password', { rollNumber: roll, phone });
-      // We'll try with dummy password to just check existence
+      const res = await API.post('/auth/forgot-password/request', { rollNumber: roll, phone });
       document.getElementById('forgotStep1').style.display = 'none';
       document.getElementById('forgotStep2').style.display = 'block';
-      showToast('Identity verified! Enter new password.', 'success');
-    } catch {
-      // We check if user exists (server returns non-error on verify step)
-      document.getElementById('forgotStep1').style.display = 'none';
-      document.getElementById('forgotStep2').style.display = 'block';
+      showToast(res.message || 'OTP sent to your email!', 'success');
+    } catch(err) {
+      showToast(err.message || 'Error looking up account', 'error');
+    } finally {
+      if(btn) { btn.disabled = false; btn.innerHTML = 'Verify Identity'; }
     }
   }
 
   async function doResetPassword() {
+    const otp = document.getElementById('fOtp').value.trim();
     const newPwd = document.getElementById('fNewPwd').value;
     const conf = document.getElementById('fConfPwd').value;
+    if (!otp) { showToast('Please enter the OTP sent to your email', 'error'); return; }
     if (newPwd !== conf) { showToast('Passwords do not match', 'error'); return; }
-    if (newPwd.length < 6) { showToast('Password too short', 'error'); return; }
+    if (!/^(?=.*[A-Z])(?=.*[0-9]).{6,12}$/.test(newPwd)) { showToast('Password must be 6-12 chars, 1 uppercase, 1 number', 'error'); return; }
+    
+    const btn = event ? event.target : document.querySelector('#forgotStep2 .btn');
+    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...'; }
     try {
-      await API.post('/auth/forgot-password', {
+      await API.post('/auth/forgot-password/reset', {
         rollNumber: document.getElementById('fRoll').value.trim(),
-        phone: document.getElementById('fPhone').value.trim(),
+        otp,
         newPassword: newPwd
       });
-      showToast('Password reset successfully!', 'success');
-      closeModal('forgotModal');
-    } catch (err) {
-      showToast(err.message, 'error');
+      showToast('Password reset successfully! You can now sign in.', 'success');
+      setTimeout(() => closeModal('forgotModal'), 2000);
+    } catch(err) {
+      showToast(err.message || 'Error resetting password', 'error');
+    } finally {
+      if(btn) { btn.disabled = false; btn.innerHTML = 'Reset Password'; }
     }
   }
 </script>

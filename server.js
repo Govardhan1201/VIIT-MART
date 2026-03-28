@@ -120,6 +120,11 @@ async function initDb() {
       registered_at TEXT DEFAULT (datetime('now')),
       UNIQUE(roll_number, role)
     );
+    CREATE TABLE IF NOT EXISTS otp_store (
+      roll_number TEXT PRIMARY KEY,
+      otp TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -298,13 +303,14 @@ app.post('/api/auth/register',
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('rollNumber').trim().isLength({ min: 6 }).withMessage('Invalid roll number'),
   body('phone').trim().isLength({ min: 10, max: 10 }).withMessage('Phone must be 10 digits'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').matches(/^(?=.*[A-Z])(?=.*[0-9]).{6,12}$/).withMessage('Password must be 6-12 chars, 1 uppercase, 1 number'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
   try {
     const { name, rollNumber, branch, year, phone, email, password, role } = req.body;
-    if (!name || !rollNumber || !branch || !year || !phone || !password || !role)
+    if (!name || !rollNumber || !branch || !year || !phone || !email || !password || !role)
       return res.status(400).json({ error: 'All required fields must be filled' });
     if (role === 'admin') return res.status(403).json({ error: 'Admin registration not allowed' });
 
@@ -399,19 +405,58 @@ app.post('/api/auth/admin-login', loginLimiter, async (req, res) => {
   }
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password/request', async (req, res) => {
   try {
-    const { rollNumber, phone, newPassword } = req.body;
-    const user = await db.get('SELECT id FROM users WHERE roll_number = ? AND phone = ?', [rollNumber, phone]);
+    const { rollNumber, phone } = req.body;
+    const user = await db.get('SELECT id, email, name FROM users WHERE roll_number = ? AND phone = ?', [rollNumber, phone]);
     if (!user) return res.status(404).json({ error: 'No account found with that roll number and phone' });
-    if (newPassword) {
-      const hash = await bcrypt.hash(newPassword, 10);
-      await db.run('UPDATE users SET password_hash = ? WHERE roll_number = ?', [hash, rollNumber]);
+    if (!user.email) return res.status(400).json({ error: 'No email associated with this account. Please contact admin.' });
+    
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+    
+    // Store in DB
+    await db.run('INSERT OR REPLACE INTO otp_store (roll_number, otp, expires_at) VALUES (?, ?, ?)', [rollNumber, otp, expiresAt]);
+    
+    // Send email
+    sendEmail({
+      to: user.email,
+      subject: '🔑 Password Reset OTP - VIIT Mart',
+      html: `<div style="font-family:sans-serif;padding:20px;">
+        <h2>Password Reset</h2>
+        <p>Hello ${user.name.split(' ')[0]},</p>
+        <p>Your password reset OTP is valid for 15 minutes:</p>
+        <h1 style="font-size:2em;color:#6c63ff;">${otp}</h1>
+        <p>If you did not request this, please ignore this email.</p>
+      </div>`
+    });
+    
+    res.json({ success: true, message: 'OTP sent to your registered email' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/forgot-password/reset', async (req, res) => {
+  try {
+    const { rollNumber, otp, newPassword } = req.body;
+    if (!rollNumber || !otp || !newPassword) return res.status(400).json({ error: 'Missing required parameters' });
+    
+    // Validate password constraint
+    if (!/^(?=.*[A-Z])(?=.*[0-9]).{6,12}$/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must be 6-12 chars, 1 uppercase, 1 number' });
     }
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+
+    const record = await db.get('SELECT * FROM otp_store WHERE roll_number = ?', [rollNumber]);
+    if (!record || record.otp !== otp) return res.status(401).json({ error: 'Invalid or incorrect OTP' });
+    if (Date.now() > record.expires_at) return res.status(401).json({ error: 'OTP has expired' });
+
+    // Reset password
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.run('UPDATE users SET password_hash = ? WHERE roll_number = ?', [hash, rollNumber]);
+    await db.run('DELETE FROM otp_store WHERE roll_number = ?', [rollNumber]);
+
+    res.json({ success: true, message: 'Password reset successful. You can now login.' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── PRODUCT ROUTES ───────────────────────────────────────────────────────────
