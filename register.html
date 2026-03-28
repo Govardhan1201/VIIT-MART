@@ -113,10 +113,10 @@
           <label class="form-label required">Password</label>
           <div class="input-wrapper">
             <i class="fas fa-lock input-icon-left"></i>
-            <input type="password" id="regPassword" class="form-control form-control-password" placeholder="6-12 chars, 1 uppercase, 1 number" required minlength="6" maxlength="12">
+            <input type="password" id="regPassword" class="form-control form-control-password" placeholder="Min 3 alphabets, 2 nums, 1 special" required minlength="6" maxlength="12">
             <button type="button" class="password-toggle" onclick="togglePassword('regPassword',this)"><i class="fas fa-eye"></i></button>
           </div>
-          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Must have 6-12 characters, 1 uppercase letter, 1 number</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Must have 6-12 chars: min 3 alphabets, 2 numbers, 1 special</p>
         </div>
         <button type="submit" class="btn btn-primary btn-full btn-lg" id="regBtn">
           <i class="fas fa-user-plus"></i> Create Account
@@ -169,7 +169,7 @@
     // Validate
     if (!/[A-Za-z]/.test(name)) { showToast('Name needs at least 1 alphabetic character','error'); return; }
     if (name.length > 30) { showToast('Name cannot exceed 30 characters','error'); return; }
-    if (!/(?=.*[A-Z])(?=.*[0-9]).{6,12}/.test(password) || password.length > 12) { showToast('Password must have 6-12 chars, 1 uppercase & 1 number','error'); return; }
+    if (!/^(?=.*[A-Za-z].*[A-Za-z].*[A-Za-z])(?=.*\d.*\d)(?=.*[^A-Za-z0-9\s])\S{6,12}$/.test(password)) { showToast('Password must have 6-12 chars, 3 alphabets, 2 numbers, 1 special char','error'); return; }
     if (document.getElementById('regPhone').value.length !== 10) { showToast('Phone must be exactly 10 digits','error'); return; }
 
     btn.disabled = true;
