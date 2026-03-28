@@ -150,10 +150,10 @@
     try {
       const data = await API.get('/lookup/' + roll);
       if (data && data.name) {
-        if (!document.getElementById('regName').value) document.getElementById('regName').value = data.name;
+        document.getElementById('regName').value = data.name;
         if (data.branch) document.getElementById('regBranch').value = data.branch;
         if (data.year) document.getElementById('regYear').value = data.year;
-        if (data.phone && !document.getElementById('regPhone').value) document.getElementById('regPhone').value = data.phone;
+        if (data.phone) document.getElementById('regPhone').value = data.phone;
       }
     } catch(e) {/* silent */}
   }
