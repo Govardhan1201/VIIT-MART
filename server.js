@@ -880,7 +880,7 @@ app.get('/api/admin/reviews', requireAdmin, async (req, res) => {
 app.get('/api/lookup/:roll', async (req, res) => {
   try {
     const roll = req.params.roll.toUpperCase();
-    const user = await db.get('SELECT name, branch, year, phone FROM users WHERE roll_number = ?', [roll]);
+    const user = await db.get('SELECT name, branch, year, phone, email FROM users WHERE roll_number = ?', [roll]);
     if (user) return res.json(user);
     
     // Fallback to student tracking data
