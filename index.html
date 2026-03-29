@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -447,7 +447,7 @@
 
   <!-- ─── Page Loader ─────────────────────────────────────── -->
   <div class="page-loader" id="pageLoader">
-    <div class="loader-logo">✨ NIRVANA <span style="color:var(--accent-primary)">MART</span></div>
+    <img src="LOGO.png" alt="Nirvana Mart" class="loader-logo-img">
     <div class="loader-bar">
       <div class="loader-bar-fill"></div>
     </div>
@@ -458,9 +458,8 @@
   <!-- ─── Navigation ───────────────────────────────────────── -->
   <nav class="navbar" id="mainNav">
     <div class="navbar-inner container">
-      <a href="index.html" class="nav-logo">
-        <div class="logo-icon">🎓</div>
-        NIRVANA MART
+      <a href="index.html" class="nav-logo" onclick="burstCarts(event, this)">
+        <img src="LOGO.png" alt="Nirvana Mart" class="nav-logo-img">
       </a>
       <div style="flex:1"></div>
       <div class="nav-actions" id="navActions">
@@ -762,8 +761,9 @@
     <div class="container">
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
         <div>
-          <div class="footer-brand">🎓 NIRVANA MART</div>
-          <p style="margin-top:12px;font-size:0.88rem;line-height:1.7;color:var(--text-muted);">Your trusted campus marketplace for buying and selling within the VIIT college community.</p>
+          <img src="LOGO.png" alt="Nirvana Mart" class="footer-logo-img">
+          <p style="margin-top:20px; font-size:0.95rem; line-height:1.7;">Your exclusive campus marketplace to buy,
+            sell, and connect with verified peers safely.</p>
         </div>
         <div class="footer-links">
           <h4>Quick Links</h4>
@@ -1007,6 +1007,78 @@
         await API.delete('/chat/' + id);
         document.getElementById('msg-'+id)?.remove();
       } catch(e) { showToast(e.message, 'error'); }
+    }
+
+    /* ─── Logo Animation Effect ───────────────────────────────── */
+    function burstCarts(e, el) {
+      e.preventDefault();
+      if(el.isAnimating) return;
+      el.isAnimating = true;
+
+      const img = el.querySelector('img');
+      const rect = img.getBoundingClientRect();
+
+      const clone = document.createElement('img');
+      clone.src = img.src;
+      clone.style.position = 'fixed';
+      clone.style.top = rect.top + 'px';
+      clone.style.left = rect.left + 'px';
+      clone.style.width = rect.width + 'px';
+      clone.style.height = rect.height + 'px';
+      clone.style.zIndex = '10000';
+      clone.style.transition = 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      document.body.appendChild(clone);
+
+      img.style.opacity = '0';
+
+      setTimeout(() => {
+        clone.classList.add('logo-burst-center');
+      }, 20);
+
+      setTimeout(() => {
+        clone.style.opacity = '0';
+        clone.style.transform = 'translate(-50%, -50%) scale(8)';
+        
+        for(let i=0; i<40; i++) {
+          const cart = document.createElement('div');
+          cart.className = 'burst-cart';
+          cart.innerHTML = '🛒';
+          document.body.appendChild(cart);
+          
+          const angle = Math.random() * Math.PI * 2;
+          const velocity = 15 + Math.random() * 25;
+          let vx = Math.cos(angle) * velocity;
+          let vy = Math.sin(angle) * velocity - 10;
+          let x = window.innerWidth / 2;
+          let y = window.innerHeight / 2;
+          let rot = Math.random() * 360;
+          const rotV = (Math.random() - 0.5) * 20;
+          let opacity = 1;
+          
+          function anim() {
+            vy += 0.8;
+            x += vx;
+            y += vy;
+            rot += rotV;
+            opacity -= 0.015;
+            
+            cart.style.left = x + 'px';
+            cart.style.top = y + 'px';
+            cart.style.transform = `translate(-50%, -50%) rotate(${rot}deg)`;
+            cart.style.opacity = opacity;
+            
+            if(opacity > 0) requestAnimationFrame(anim);
+            else cart.remove();
+          }
+          requestAnimationFrame(anim);
+        }
+
+        setTimeout(() => {
+          clone.remove();
+          img.style.opacity = '1';
+          el.isAnimating = false;
+        }, 1500);
+      }, 900);
     }
   </script>
 </body>
