@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server: SocketServer } = require('socket.io');
@@ -39,7 +39,23 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+const upload = multer({ 
+  storage: multer.memoryStorage(), 
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only standard image files are allowed!'), false);
+  }
+});
+
+// ─── Utility ──────────────────────────────────────────────────────────────────
+function htmlEscape(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[&<>"']/g, function(match) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return map[match];
+  });
+}
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -65,8 +81,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.static(path.join(__dirname)));
 
 // Rate limiter: max 10 login attempts per 15 min per IP
@@ -77,6 +93,17 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+// Global Rate limiter: mitigate API spam/DoS
+const globalLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 300, // 300 requests per 5 minutes per IP
+  message: { error: 'Too many requests from this IP, please try again after 5 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/admin') // Optional: skip heavy frontend requests if needed
+});
+app.use('/api', globalLimiter);
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
 const { createClient } = require('@libsql/client');
@@ -506,7 +533,7 @@ app.get('/api/products', async (req, res) => {
     const params = [];
     if (category && category !== 'all') { sql += ' AND category = ?'; params.push(category); }
     if (search) { sql += ' AND (title LIKE ? OR description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY created_at DESC LIMIT 100';
     let rows = await db.all(sql, params);
     // Parse images_json for each product
     rows = rows.map(p => ({ ...p, images: tryParseJSON(p.images_json, [p.image_url].filter(Boolean)) }));
@@ -520,7 +547,7 @@ function tryParseJSON(str, fallback) {
 }
 
 app.get('/api/products/pending', requireAdmin, async (req, res) => {
-  try { res.json(await db.all("SELECT * FROM products WHERE status = 'pending' ORDER BY created_at DESC")); }
+  try { res.json(await db.all("SELECT * FROM products WHERE status = 'pending' ORDER BY created_at DESC LIMIT 100")); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -530,7 +557,7 @@ app.get('/api/products/mine', authenticate, async (req, res) => {
 });
 
 app.get('/api/products/all', requireAdmin, async (req, res) => {
-  try { res.json(await db.all("SELECT * FROM products WHERE status = 'approved' ORDER BY created_at DESC")); }
+  try { res.json(await db.all("SELECT * FROM products WHERE status = 'approved' ORDER BY created_at DESC LIMIT 100")); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -538,6 +565,12 @@ app.post('/api/products', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'seller') return res.status(403).json({ error: 'Only sellers can list products' });
     const { title, category, condition, price, originalPrice, quantity, description, imageUrl, imageUrls, location } = req.body;
+    
+    // Sanitize user inputs
+    const safeTitle = htmlEscape(title);
+    const safeDesc = htmlEscape(description);
+    const safeLoc = htmlEscape(location);
+
     // Support up to 5 images
     let imagesArr = [];
     if (Array.isArray(imageUrls) && imageUrls.length > 0) {
@@ -549,10 +582,10 @@ app.post('/api/products', authenticate, async (req, res) => {
     const imagesJson = JSON.stringify(imagesArr);
     const result = await db.run(
       "INSERT INTO products (title,category,condition,price,original_price,quantity,description,image_url,images_json,location,seller_roll,seller_name,seller_phone,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')",
-      [title, category, condition, price, originalPrice || null, quantity || 1, description, primaryImage, imagesJson, location || '', req.user.rollNumber, req.user.name, req.user.phone]
+      [safeTitle, category, condition, price, originalPrice || null, quantity || 1, safeDesc, primaryImage, imagesJson, safeLoc || '', req.user.rollNumber, req.user.name, req.user.phone]
     );
     const admin = await db.get("SELECT roll_number FROM users WHERE role = 'admin'");
-    if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [admin.roll_number, '🆕 New Product Pending', `"${title}" by ${req.user.name} needs approval`]);
+    if (admin) await db.run('INSERT INTO notifications (user_roll,title,message) VALUES (?,?,?)', [admin.roll_number, '🆕 New Product Pending', `"${safeTitle}" by ${req.user.name} needs approval`]);
     res.json({ id: result.lastID, success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -615,7 +648,7 @@ app.get('/api/orders/received', authenticate, async (req, res) => {
 });
 
 app.get('/api/orders/all', requireAdmin, async (req, res) => {
-  try { res.json(await db.all('SELECT * FROM orders ORDER BY ordered_at DESC')); }
+  try { res.json(await db.all('SELECT * FROM orders ORDER BY ordered_at DESC LIMIT 100')); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -801,7 +834,7 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
-  try { res.json(await db.all('SELECT id,name,roll_number,branch,year,phone,email,role,registered_at FROM users ORDER BY registered_at DESC')); }
+  try { res.json(await db.all('SELECT id,name,roll_number,branch,year,phone,email,role,registered_at FROM users ORDER BY registered_at DESC LIMIT 500')); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -880,11 +913,12 @@ app.post('/api/reviews', authenticate, async (req, res) => {
   try {
     const { productId, rating, comment } = req.body;
     if (!productId || !rating) return res.status(400).json({ error: 'Product ID and rating required' });
+    const safeComment = htmlEscape(comment || '');
     const existing = await db.get('SELECT id FROM reviews WHERE product_id = ? AND reviewer_roll = ?', [productId, req.user.rollNumber]);
     if (existing) {
-      await db.run('UPDATE reviews SET rating=?, comment=?, created_at=datetime("now") WHERE product_id=? AND reviewer_roll=?', [rating, comment || '', productId, req.user.rollNumber]);
+      await db.run('UPDATE reviews SET rating=?, comment=?, created_at=datetime("now") WHERE product_id=? AND reviewer_roll=?', [rating, safeComment, productId, req.user.rollNumber]);
     } else {
-      await db.run('INSERT INTO reviews (product_id,reviewer_roll,reviewer_name,rating,comment) VALUES (?,?,?,?,?)', [productId, req.user.rollNumber, req.user.name, rating, comment || '']);
+      await db.run('INSERT INTO reviews (product_id,reviewer_roll,reviewer_name,rating,comment) VALUES (?,?,?,?,?)', [productId, req.user.rollNumber, req.user.name, rating, safeComment]);
     }
     const avg = await db.get('SELECT AVG(rating) as avg FROM reviews WHERE product_id = ?', [productId]);
     if (avg && avg.avg) await db.run('UPDATE products SET rating = ? WHERE id = ?', [parseFloat(avg.avg.toFixed(1)), productId]);
@@ -903,13 +937,14 @@ app.post('/api/site-reviews', authenticate, async (req, res) => {
   try {
     const { rating, comment } = req.body;
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating 1-5 required' });
+    const safeComment = htmlEscape(comment || '');
     const existing = await db.get('SELECT id FROM site_reviews WHERE reviewer_roll = ?', [req.user.rollNumber]);
     if (existing) {
       await db.run('UPDATE site_reviews SET rating=?, comment=?, created_at=datetime("now") WHERE reviewer_roll=?',
-        [rating, comment || '', req.user.rollNumber]);
+        [rating, safeComment, req.user.rollNumber]);
     } else {
       await db.run('INSERT INTO site_reviews (reviewer_roll, reviewer_name, rating, comment) VALUES (?,?,?,?)',
-        [req.user.rollNumber, req.user.name, rating, comment || '']);
+        [req.user.rollNumber, req.user.name, rating, safeComment]);
     }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -939,6 +974,7 @@ app.get('/api/admin/reviews', requireAdmin, async (req, res) => {
       FROM reviews r 
       JOIN products p ON r.product_id = p.id 
       ORDER BY r.created_at DESC
+      LIMIT 100
     `);
     res.json(reviews);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1056,10 +1092,11 @@ app.post('/api/chat', authenticate, async (req, res) => {
   try {
     const { message, targetRoll } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
+    const safeMessage = htmlEscape(message);
     const isAdmin = req.user.role === 'admin';
     const roll = isAdmin && targetRoll ? targetRoll : req.user.rollNumber;
     const result = await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
-      [roll, req.user.name, message, isAdmin ? 1 : 0]);
+      [roll, req.user.name, safeMessage, isAdmin ? 1 : 0]);
     res.json({ success: true, id: result.lastID });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1080,16 +1117,17 @@ app.post('/api/chat/admin-reply', requireAdmin, async (req, res) => {
   try {
     const { targetRoll, message } = req.body;
     if (!targetRoll || !message) return res.status(400).json({ error: 'Roll and message required' });
+    const safeMessage = htmlEscape(message);
     const result = await db.run('INSERT INTO chat_messages (user_roll,user_name,message,is_admin) VALUES (?,?,?,?)',
-      [targetRoll, req.user.name, message, 1]);
+      [targetRoll, req.user.name, safeMessage, 1]);
     // Emit to the user's Socket.io room in real-time
     io.to(`user:${targetRoll}`).emit('chat:message', {
       id: result.lastID, user_roll: targetRoll, user_name: req.user.name,
-      message, is_admin: 1, created_at: new Date().toISOString()
+      message: safeMessage, is_admin: 1, created_at: new Date().toISOString()
     });
     // Fire a notification to the user
     await db.run('INSERT INTO notifications (user_roll,message,type) VALUES (?,?,?)',
-      [targetRoll, `Support replied: "${message.slice(0,60)}"`, 'chat']);
+      [targetRoll, `Support replied: "${safeMessage.slice(0,60)}"`, 'chat']);
     io.to(`user:${targetRoll}`).emit('notification:new');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
