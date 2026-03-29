@@ -204,6 +204,7 @@ function toggleSpin() {
 
 function addToCart() {
   if (!currentUser) { showToast('Login to add to cart', 'error'); window.location.href='/login'; return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   let cart = JSON.parse(localStorage.getItem('vm_cart')||'[]');
   if (!cart.find(c => c.id === currentProduct.id)) { cart.push(currentProduct); localStorage.setItem('vm_cart', JSON.stringify(cart)); }
   showToast('Added to cart! 🛒', 'success');
@@ -211,12 +212,14 @@ function addToCart() {
 
 function buyNow() {
   if (!currentUser) { window.location.href='/login'; return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   addToCart();
   window.location.href='/shop';
 }
 
 function toggleWishlist() {
   if (!currentUser) { showToast('Login to save to wishlist', 'error'); return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   let wishlist = JSON.parse(localStorage.getItem('vm_wishlist')||'[]');
   const idx = wishlist.findIndex(w => w.id === currentProduct.id);
   if (idx > -1) { wishlist.splice(idx, 1); showToast('Removed from wishlist', 'info'); document.getElementById('wlBtn').classList.remove('active'); document.getElementById('wlIcon').className = 'far fa-heart wi-icon'; }
@@ -237,7 +240,7 @@ async function loadReviews() {
           </div>
           ${r.comment?`<div class="review-text">${r.comment}</div>`:''}
         </div>`).join('');
-    if (currentUser) {
+    if (currentUser && currentUser.role === 'buyer') {
       document.getElementById('reviewForm').innerHTML = `
         <div style="font-weight:800;margin-bottom:14px;">Leave a Review</div>
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">

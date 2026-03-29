@@ -515,7 +515,7 @@ function updateCartBadge() {
 function addToCartQuick(e, id) {
   if (e) e.stopPropagation();
   if (!currentUser) { showToast('Please login to add to cart', 'error'); window.location.href = 'login.html'; return; }
-  if (currentUser.role === 'seller') { showToast('Sellers cannot buy. Use a buyer account.', 'error'); return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   const product = allProducts.find(p => p.id === id);
   if (!product) return;
   if (cart.find(c => c.id === id)) { showToast('Already in cart!', 'info'); return; }
@@ -569,7 +569,7 @@ function removeFromCart(id) {
 function proceedCheckout() {
   if (!cart.length) return;
   if (!currentUser) { showToast('Please login first', 'error'); window.location.href = 'login.html'; return; }
-  if (currentUser.role === 'seller') { showToast('Sellers cannot checkout', 'error'); return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   closeCart();
   const total = cart.reduce((s,i) => s + i.price, 0);
   document.getElementById('paymentSummary').innerHTML = `<div style="font-weight:700;margin-bottom:8px;">${cart.length} item(s)</div><div style="font-size:1.2rem;font-weight:800;color:var(--accent-primary);">Total: ₹${total.toLocaleString()}</div>`;
@@ -618,6 +618,7 @@ function updateWishlistBadge() {
 function toggleWishlist(e, id) {
   e.stopPropagation();
   if (!currentUser) { showToast('Login to save to wishlist', 'error'); return; }
+  if (currentUser.role === 'seller') { showToast('Login with buyer account to access those features!', 'error'); return; }
   const product = allProducts.find(p => p.id === id);
   const idx = wishlist.findIndex(w => w.id === id);
   if (idx > -1) { wishlist.splice(idx,1); showToast('Removed from wishlist', 'info'); }
