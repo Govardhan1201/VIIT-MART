@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Tracking — VIIT Mart</title>
-  <meta name="description" content="Track your VIIT Mart order status in real-time.">
+  <title>Order Tracking — NIRVANA MART</title>
+  <meta name="description" content="Track your NIRVANA MART order status in real-time.">
   <link rel="stylesheet" href="shared/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 NIRVANA MART</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
 
 <nav class="navbar">
   <div class="navbar-inner container">
-    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>NIRVANA MART</a>
     <div style="flex:1;"></div>
     <div class="nav-actions">
       <button class="dark-toggle" id="darkModeToggle"></button>
@@ -112,7 +112,7 @@ function renderTracking(order) {
   const next = steps[Math.min(currentIdx + 1, steps.length - 1)];
   document.getElementById('nextStepInfo').innerHTML = currentIdx < steps.length - 1
     ? `<i class="fas fa-info-circle" style="color:var(--accent-primary);"></i> <strong>Next step:</strong> ${next.label} — ${next.desc}`
-    : `<i class="fas fa-check-circle" style="color:var(--accent-green);"></i> <strong>Your order is complete!</strong> Thank you for shopping on VIIT Mart.`;
+    : `<i class="fas fa-check-circle" style="color:var(--accent-green);"></i> <strong>Your order is complete!</strong> Thank you for shopping on NIRVANA MART.`;
 }
 </script>
 </body>

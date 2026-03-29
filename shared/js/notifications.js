@@ -1,4 +1,4 @@
-// VIIT Mart – Notification Bell Widget
+﻿// NIRVANA MART – Notification Bell Widget
 // Usage: include this script, then call NotificationBell.init('#navBellSlot')
 // The bell auto-connects to Socket.io and polls the /api/notifications endpoint.
 

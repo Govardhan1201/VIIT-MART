@@ -1,20 +1,20 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VIIT Mart — Campus Marketplace | Buy & Sell Among VIIT Students</title>
+  <title>Nirvana Mart — Campus Marketplace | Buy &amp; Sell Among Students</title>
   <meta name="description"
-    content="Buy and sell within VIIT campus. Verified students, secure transactions, admin-moderated marketplace. Electronics, books, fashion, services and more.">
-  <meta property="og:title" content="VIIT Mart — Campus Marketplace">
-  <meta property="og:description" content="Buy and sell within VIIT campus. Verified students, secure transactions.">
+    content="Buy and sell on campus with Nirvana Mart. Verified students, secure admin-moderated transactions. Electronics, books, fashion, services and more.">
+  <meta property="og:title" content="Nirvana Mart — Campus Marketplace">
+  <meta property="og:description" content="Buy and sell on campus with Nirvana Mart. Verified students, secure transactions.">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="theme-color" content="#c8923a">
   <link rel="canonical" href="/">
   <link rel="stylesheet" href="shared/css/main.css">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebSite","name":"VIIT Mart","url":"http://localhost:3000","description":"Campus marketplace for VIIT students","potentialAction":{"@type":"SearchAction","target":"/shop?search={search_term_string}","query-input":"required name=search_term_string"}}
+  {"@context":"https://schema.org","@type":"WebSite","name":"Nirvana Mart","url":"http://localhost:3000","description":"Campus marketplace for students","potentialAction":{"@type":"SearchAction","target":"/shop?search={search_term_string}","query-input":"required name=search_term_string"}}
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -460,7 +460,7 @@
     <div class="navbar-inner container">
       <a href="index.html" class="nav-logo">
         <div class="logo-icon">🎓</div>
-        VIIT Mart
+        NIRVANA MART
       </a>
       <div style="flex:1"></div>
       <div class="nav-actions" id="navActions">
@@ -542,7 +542,7 @@
     <div class="container">
       <div style="text-align:center;margin-bottom:60px;">
         <p style="color:var(--accent-primary);font-weight:700;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;"
-          data-reveal>Why VIIT Mart?</p>
+          data-reveal>Why NIRVANA MART?</p>
         <h2 class="section-title" data-reveal>Built for <span class="gradient-text">Students</span>, by Students</h2>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;">
@@ -734,7 +734,7 @@
     <div class="modal-box" style="max-width:720px;max-height:80vh;overflow-y:auto;">
       <button class="modal-close" onclick="closeModal('allReviewsModal')"><i class="fas fa-times"></i></button>
       <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:6px;">⭐ All Student Reviews</h2>
-      <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:24px;">Reviews from verified VIIT students</p>
+      <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:24px;">Reviews from verified campus students</p>
       <div id="allReviewsContent" style="display:flex;flex-direction:column;gap:16px;"></div>
     </div>
   </div>
@@ -747,7 +747,7 @@
     <div class="orb-b orb" style="position:absolute;"></div>
     <div class="container" style="position:relative;z-index:1;">
       <h2 class="cta-title">Ready to buy or sell?</h2>
-      <p class="cta-sub">Join hundreds of VIIT students already using the marketplace.</p>
+      <p class="cta-sub">Join hundreds of campus students already using the marketplace.</p>
       <div class="cta-btns">
         <a href="register.html" class="btn btn-primary btn-lg"><i class="fas fa-user-plus"></i> Create Free Account</a>
         <a href="shop.html" class="btn btn-lg"
@@ -762,7 +762,7 @@
     <div class="container">
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
         <div>
-          <div class="footer-brand">🎓 VIIT Mart</div>
+          <div class="footer-brand">🎓 NIRVANA MART</div>
           <p style="margin-top:12px;font-size:0.88rem;line-height:1.7;color:var(--text-muted);">Your trusted campus marketplace for buying and selling within the VIIT college community.</p>
         </div>
         <div class="footer-links">
@@ -788,12 +788,12 @@
           <ul>
             <li><a href="mailto:support@viitmart.com">📧 support@viitmart.com</a></li>
             <li><a href="#">📞 +91 98765 43210</a></li>
-            <li><a href="#">📍 VIIT Campus, Pune</a></li>
+            <li><a href="#">📍 campus, Pune</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2025 VIIT Mart. All rights reserved. Made with ❤️ by Students, for Students.</p>
+        <p>© 2025 NIRVANA MART. All rights reserved. Made with ❤️ by Students, for Students.</p>
       </div>
     </div>
   </footer>
@@ -879,7 +879,7 @@
 
     function renderReviewCard(r, mini) {
       const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-      const comment = r.comment || 'Great experience on VIIT Mart!';
+      const comment = r.comment || 'Great experience on NIRVANA MART!';
       const productLine = r.product_title ? `<div style="font-size:0.75rem;color:var(--accent-primary);margin-top:4px;font-weight:600;">on ${r.product_title}</div>` : '';
       if (mini) {
         return `<div class="testimonial-card card-3d">
@@ -952,7 +952,7 @@
           style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:1rem;">✕</button>
       </div>
       <div class="chat-messages-area" id="chatMessages">
-        <div class="chat-msg theirs" style="margin-top:8px;">👋 Hi! Welcome to VIIT Mart support. How can we help you
+        <div class="chat-msg theirs" style="margin-top:8px;">👋 Hi! Welcome to NIRVANA MART support. How can we help you
           today?<div class="chat-msg-time">Support</div>
         </div>
       </div>

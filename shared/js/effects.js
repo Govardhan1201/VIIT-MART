@@ -1,4 +1,4 @@
-// VIIT Mart 3.0 — Premium Visual Effects Engine
+﻿// NIRVANA MART 3.0 — Premium Visual Effects Engine
 // Particle Canvas, Custom Cursor, Scroll Reveal, Dark Mode, Modal, Toast
 
 document.addEventListener('DOMContentLoaded', () => {

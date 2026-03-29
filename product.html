@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="pageTitle">Product — VIIT Mart</title>
+  <title id="pageTitle">Product — NIRVANA MART</title>
   <meta name="description" id="pageDesc" content="Campus marketplace product">
   <meta property="og:type" content="product">
   <link rel="stylesheet" href="shared/css/main.css">
@@ -16,11 +16,11 @@
   </style>
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 VIIT Mart</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
+<div class="page-loader" id="pageLoader"><div class="loader-logo">🎓 NIRVANA MART</div><div class="loader-bar"><div class="loader-bar-fill"></div></div></div>
 
 <nav class="navbar">
   <div class="navbar-inner container">
-    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>VIIT Mart</a>
+    <a href="index.html" class="nav-logo"><div class="logo-icon">🎓</div>NIRVANA MART</a>
     <div style="flex:1;"></div>
     <div class="nav-actions">
       <button class="dark-toggle" id="darkModeToggle"></button>
@@ -134,12 +134,12 @@ function renderProduct(p) {
   const inStock = p.quantity > 0;
 
   // SEO
-  document.getElementById('pageTitle').textContent = `${p.title} — VIIT Mart`;
-  document.getElementById('pageDesc').content = `${p.title} for sale on VIIT Mart. ₹${p.price.toLocaleString()}. ${p.condition} condition. ${p.description}`;
+  document.getElementById('pageTitle').textContent = `${p.title} — NIRVANA MART`;
+  document.getElementById('pageDesc').content = `${p.title} for sale on NIRVANA MART. ₹${p.price.toLocaleString()}. ${p.condition} condition. ${p.description}`;
   document.getElementById('breadcrumbTitle').textContent = p.title.substring(0,40);
   document.getElementById('productSchema').textContent = JSON.stringify({
     "@context":"https://schema.org","@type":"Product","name":p.title,"description":p.description,
-    "image":p.image_url,"sku":String(p.id),"brand":{"@type":"Brand","name":"VIIT Mart"},
+    "image":p.image_url,"sku":String(p.id),"brand":{"@type":"Brand","name":"NIRVANA MART"},
     "offers":{"@type":"Offer","priceCurrency":"INR","price":p.price,"availability":inStock?"https://schema.org/InStock":"https://schema.org/OutOfStock"},
     "aggregateRating":{"@type":"AggregateRating","ratingValue":p.rating||4.5,"reviewCount":1}
   });
@@ -181,7 +181,7 @@ function renderProduct(p) {
   document.getElementById('descBox').innerHTML = `<div style="font-weight:700;margin-bottom:8px;">Description</div><p style="color:var(--text-secondary);line-height:1.7;font-size:0.92rem;">${p.description}</p>`;
 
   // Seller
-  document.getElementById('sellerBox').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent-primary);"></i> <strong>Seller:</strong> ${currentUser ? p.seller_name+' (Verified)' : 'Verified VIIT Student — <a href="/login" style="color:var(--accent-primary);">Login to view contact</a>'}`;
+  document.getElementById('sellerBox').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent-primary);"></i> <strong>Seller:</strong> ${currentUser ? p.seller_name+' (Verified)' : 'Verified campus student — <a href="/login" style="color:var(--accent-primary);">Login to view contact</a>'}`;
 
   // Actions
   document.getElementById('actionBtns').innerHTML = `

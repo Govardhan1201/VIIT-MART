@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════
-   VIIT Mart 3.0 — Premium Design System
-   Fonts: DM Serif Display (headings) + Outfit (body)
+   NIRVANA MART 3.0 — Premium Design System
+   Fonts: Playfair Display SC (brand/headings) + Space Grotesk (body) + Raleway (labels)
    Theme: Obsidian-Amber luxury dark-first with aurora accents
 ═══════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display+SC:ital,wght@0,400;0,700;0,900;1,400&family=Space+Grotesk:wght@300;400;500;600;700&family=Raleway:wght@400;500;600;700;800;900&display=swap');
 
 /* ─── CSS Variables ──────────────────────────────────────────── */
 :root {
@@ -65,7 +65,7 @@
 html { scroll-behavior:smooth; }
 
 body {
-  font-family:'Outfit',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
   background-color:var(--bg-primary);
   color:var(--text-primary);
   transition:background-color 0.3s ease,color 0.3s ease;
@@ -76,8 +76,8 @@ body {
 }
 
 h1,h2,h3 {
-  font-family:'DM Serif Display','Georgia',serif;
-  letter-spacing:-0.02em;
+  font-family:'Playfair Display SC','Georgia',serif;
+  letter-spacing:-0.01em;
   line-height:1.15;
 }
 
@@ -126,9 +126,9 @@ h1,h2,h3 {
 }
 .page-loader.fade-out { opacity:0; visibility:hidden; }
 .loader-logo {
-  font-family:'DM Serif Display',serif;
+  font-family:'Playfair Display SC',serif;
   font-size:2.8rem; color:#fff;
-  letter-spacing:-1px;
+  letter-spacing:2px;
   animation:loader-pulse 1.3s ease-in-out infinite;
 }
 .loader-logo span { color:var(--accent-primary); }
@@ -168,9 +168,9 @@ h1,h2,h3 {
 .nav-logo {
   display:flex; align-items:center; gap:12px;
   text-decoration:none;
-  font-family:'DM Serif Display',serif;
-  font-size:1.5rem; color:var(--text-primary);
-  letter-spacing:-0.5px; white-space:nowrap;
+  font-family:'Playfair Display SC',serif;
+  font-size:1.35rem; color:var(--text-primary);
+  letter-spacing:1.5px; white-space:nowrap;
 }
 .nav-logo .logo-icon {
   width:42px; height:42px;
@@ -190,7 +190,7 @@ h1,h2,h3 {
   background:var(--input-bg);
   border:1.5px solid var(--border-color);
   border-radius:16px;
-  font-family:'Outfit',sans-serif;
+  font-family:'Space Grotesk',sans-serif;
   font-size:0.9rem; color:var(--text-primary);
   transition:all 0.25s ease; outline:none;
 }
@@ -299,10 +299,10 @@ h1,h2,h3 {
   display:inline-flex; align-items:center; justify-content:center;
   gap:8px; padding:12px 26px;
   border-radius:14px;
-  font-family:'Outfit',sans-serif; font-weight:600; font-size:0.95rem;
+  font-family:'Raleway',sans-serif; font-weight:700; font-size:0.9rem;
   cursor:pointer; transition:all 0.25s ease;
   border:none; text-decoration:none;
-  position:relative; overflow:hidden; letter-spacing:0.01em;
+  position:relative; overflow:hidden; letter-spacing:0.04em; text-transform:uppercase;
 }
 .btn::after {
   content:''; position:absolute; inset:0;
@@ -345,10 +345,11 @@ h1,h2,h3 {
 .btn-nav-primary {
   padding:9px 22px;
   background:var(--gradient-accent); color:white; border:none;
-  border-radius:14px; font-family:'Outfit',sans-serif;
-  font-weight:600; font-size:0.9rem; cursor:pointer;
+  border-radius:14px; font-family:'Raleway',sans-serif;
+  font-weight:700; font-size:0.88rem; cursor:pointer;
   text-decoration:none; display:inline-flex; align-items:center;
   gap:8px; transition:all 0.25s ease; white-space:nowrap;
+  letter-spacing:0.04em; text-transform:uppercase;
 }
 .btn-nav-primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(200,146,58,0.4); }
 
@@ -436,7 +437,7 @@ h1,h2,h3 {
   background:var(--input-bg);
   border:1.5px solid var(--border-color);
   border-radius:13px;
-  font-family:'Outfit',sans-serif; font-size:0.95rem;
+  font-family:'Space Grotesk',sans-serif; font-size:0.95rem;
   color:var(--text-primary); transition:all 0.25s ease; outline:none;
 }
 .form-control:focus {
@@ -526,8 +527,8 @@ h1,h2,h3 {
 .page-pad  { padding-top:96px; }
 
 .section-title {
-  font-family:'DM Serif Display',serif;
-  font-size:2.8rem; letter-spacing:-0.03em; line-height:1.15;
+  font-family:'Playfair Display SC',serif;
+  font-size:2.6rem; letter-spacing:0.01em; line-height:1.15;
 }
 .section-subtitle {
   font-size:1.1rem; color:var(--text-secondary);
@@ -676,8 +677,8 @@ h1,h2,h3 {
   padding:64px 0 32px;
   border-top:1px solid #1a1a2e;
 }
-.footer-brand { font-family:'DM Serif Display',serif; font-size:1.7rem; font-weight:400; color:#fff; }
-.footer-links h4 { font-weight:700; color:#fff; margin-bottom:16px; font-size:0.88rem; letter-spacing:0.5px; text-transform:uppercase; font-family:'Outfit',sans-serif; }
+.footer-brand { font-family:'Playfair Display SC',serif; font-size:1.6rem; font-weight:700; color:#fff; letter-spacing:2px; }
+.footer-links h4 { font-weight:700; color:#fff; margin-bottom:16px; font-size:0.85rem; letter-spacing:1px; text-transform:uppercase; font-family:'Raleway',sans-serif; }
 .footer-links ul { list-style:none; }
 .footer-links li { margin-bottom:10px; }
 .footer-links a { color:#9090b0; text-decoration:none; transition:color 0.2s; font-size:0.9rem; }
@@ -766,7 +767,7 @@ h1,h2,h3 {
 .timeline-info .step-desc  { font-size:0.8rem; color:var(--text-muted); margin-top:2px; }
 
 /* ─── Live Chat Widget ────────────────────────────────────────── */
-.chat-widget { position:fixed; bottom:28px; right:28px; z-index:4000; font-family:'Outfit',sans-serif; }
+.chat-widget { position:fixed; bottom:28px; right:28px; z-index:4000; font-family:'Space Grotesk',sans-serif; }
 .chat-bubble {
   width:58px; height:58px; border-radius:50%;
   background:var(--gradient-accent);

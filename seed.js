@@ -1,8 +1,8 @@
-const sqlite3 = require('sqlite3').verbose();
+﻿const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbFile = path.join(__dirname, 'viitmart.db');
+const dbFile = path.join(__dirname, 'nirvanamart.db');
 const rawDb = new sqlite3.Database(dbFile, (err) => {
   if (err) { console.error('DB open error:', err.message); process.exit(1); }
   console.log('✅ SQLite connected for seeding →', dbFile);

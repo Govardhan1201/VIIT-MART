@@ -1,4 +1,4 @@
-// VIIT Mart Auth Helper
+﻿// NIRVANA MART Auth Helper
 const Auth = {
   getUser() {
     try { return JSON.parse(localStorage.getItem('vm_user')); } catch { return null; }

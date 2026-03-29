@@ -1,4 +1,4 @@
-// VIIT Mart API Client
+﻿// NIRVANA MART API Client
 const API_BASE = window.location.protocol === 'file:' 
   ? 'http://localhost:3000/api'
   : '/api';

@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server: SocketServer } = require('socket.io');
@@ -22,7 +22,7 @@ async function sendEmail({ to, subject, html }) {
   if (!process.env.RESEND_API_KEY || !to) return;
   try {
     await resend.emails.send({
-      from: 'VIIT Mart <onboarding@resend.dev>', // Use resend.dev until your domain is verified
+      from: 'NIRVANA MART <onboarding@resend.dev>', // Use resend.dev until your domain is verified
       to,
       subject,
       html
@@ -48,7 +48,7 @@ const io = new SocketServer(httpServer, {
 });
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'viitmart-secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'nirvanamart-secret';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'ADMIN2025';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin123';
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
@@ -80,7 +80,7 @@ const loginLimiter = rateLimit({
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
 const { createClient } = require('@libsql/client');
-const dbFile = process.env.DB_PATH || path.join(__dirname, 'viitmart.db');
+const dbFile = process.env.DB_PATH || path.join(__dirname, 'nirvanamart.db');
 
 const client = createClient({
   url: process.env.TURSO_DATABASE_URL || `file:${dbFile}`,
@@ -375,10 +375,10 @@ app.post('/api/auth/register',
     if (email) {
       sendEmail({
         to: email,
-        subject: '🎉 Welcome to VIIT Mart!',
+        subject: '🎉 Welcome to NIRVANA MART!',
         html: `
           <div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;background:#0f0f1a;color:#e2e8f0;border-radius:12px;">
-            <h2 style="color:#6c63ff;">Welcome to VIIT Mart, ${name}! 🛒</h2>
+            <h2 style="color:#6c63ff;">Welcome to NIRVANA MART, ${name}! 🛒</h2>
             <p>Your account has been created successfully.</p>
             <table style="width:100%;border-collapse:collapse;margin:16px 0;">
               <tr><td style="padding:6px 0;color:#94a3b8;">Roll Number</td><td style="font-weight:700;">${rollNumber}</td></tr>
@@ -386,7 +386,7 @@ app.post('/api/auth/register',
               <tr><td style="padding:6px 0;color:#94a3b8;">Branch</td><td style="font-weight:700;">${branch}, Year ${year}</td></tr>
             </table>
             <a href="https://viit-mart.onrender.com/shop" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Browse Shop →</a>
-            <p style="margin-top:24px;font-size:0.8rem;color:#475569;">VIIT Mart — Campus Marketplace</p>
+            <p style="margin-top:24px;font-size:0.8rem;color:#475569;">NIRVANA MART — Campus Marketplace</p>
           </div>`
       });
     }
@@ -461,7 +461,7 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
     // Send email
     sendEmail({
       to: user.email,
-      subject: '🔑 Password Reset OTP - VIIT Mart',
+      subject: '🔑 Password Reset OTP - NIRVANA MART',
       html: `<div style="font-family:sans-serif;padding:20px;">
         <h2>Password Reset</h2>
         <p>Hello ${user.name.split(' ')[0]},</p>
@@ -676,7 +676,7 @@ app.post('/api/orders', authenticate, async (req, res) => {
         let itemsHtml = createdOrders.map(o => `<li>${o.title} - ₹${o.price}</li>`).join('');
         sendEmail({
           to: req.user.email,
-          subject: '📦 Order Confirmation - VIIT Mart',
+          subject: '📦 Order Confirmation - NIRVANA MART',
           html: `<div style="font-family:sans-serif;padding:20px;background:#0f0f1a;color:#e2e8f0;border-radius:12px;max-width:500px;margin:auto;">
             <h2 style="color:#6c63ff;">Thank you for your order, ${req.user.name.split(' ')[0]}!</h2>
             <p>Your order has been placed successfully.</p>
@@ -1177,7 +1177,7 @@ app.get('/api/orders/:id/invoice', authenticate, async (req, res) => {
     doc.pipe(res);
 
     // Header
-    doc.fontSize(24).font('Helvetica-Bold').text('VIIT Mart', 50, 50);
+    doc.fontSize(24).font('Helvetica-Bold').text('NIRVANA MART', 50, 50);
     doc.fontSize(10).font('Helvetica').text('Campus Marketplace • VIIT Pune', 50, 80);
     doc.moveTo(50, 100).lineTo(545, 100).stroke();
 
@@ -1214,7 +1214,7 @@ app.get('/api/orders/:id/invoice', authenticate, async (req, res) => {
     doc.font('Helvetica-Bold').text(`Total: Rs. ${Number(order.total_paid).toLocaleString('en-IN')}`, { align: 'right' });
 
     doc.moveDown(2);
-    doc.font('Helvetica').fontSize(9).text('Thank you for shopping on VIIT Mart!', { align: 'center' });
+    doc.font('Helvetica').fontSize(9).text('Thank you for shopping on NIRVANA MART!', { align: 'center' });
     doc.end();
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1250,15 +1250,15 @@ pages.forEach(p => {
     res.sendFile(path.join(__dirname, p === 'index' ? 'index.html' : `${p}.html`)));
 });
 // Admin portal accessible only at hidden URL — not linked publicly
-app.get('/viitmart-admin-portal', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/nirvanamart-admin-portal', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 initDb().then(() => {
   httpServer.listen(PORT, () => {
-    console.log(`\n🎓 VIIT Mart is LIVE at http://localhost:${PORT}`);
+    console.log(`\n🎓 NIRVANA MART is LIVE at http://localhost:${PORT}`);
     console.log(`   → Home:   http://localhost:${PORT}/`);
     console.log(`   → Shop:   http://localhost:${PORT}/shop`);
-    console.log(`   → Admin:  http://localhost:${PORT}/viitmart-admin-portal`);
+    console.log(`   → Admin:  http://localhost:${PORT}/nirvanamart-admin-portal`);
     console.log(`\n   Admin credentials: Secret=${ADMIN_SECRET} | Password=${ADMIN_PASSWORD}\n`);
   });
 }).catch(err => {
