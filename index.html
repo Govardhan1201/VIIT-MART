@@ -1060,7 +1060,7 @@
             x += vx;
             y += vy;
             rot += rotV;
-            opacity -= 0.015;
+            opacity -= 0.005;
             
             cart.style.left = x + 'px';
             cart.style.top = y + 'px';
@@ -1077,7 +1077,7 @@
           clone.remove();
           img.style.opacity = '1';
           el.isAnimating = false;
-        }, 1500);
+        }, 3500);
       }, 900);
     }
   </script>
