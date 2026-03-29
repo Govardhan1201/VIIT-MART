@@ -967,7 +967,8 @@ h1,h2,h3 {
   /* 1. Header & Navigation */
   .navbar-inner { padding:0 16px; height:64px; gap:8px; }
   .nav-actions { display:none !important; } /* Hide top-right links, handled by bottom nav */
-  .nav-search { display:block; flex:1; max-width:none; padding-right:0; margin-left:8px; }
+  .nav-search { display:block; flex:1; max-width:none; padding-right:0; margin-left:8px; align-self:center; display:flex; align-items:center; }
+  .nav-search input { height: 38px; padding: 0 16px 0 38px !important; font-size: 0.85rem !important; }
   .cart-btn { display:none !important; } /* Cart moved to bottom nav */
   
   /* 2. Container sizing */
@@ -990,6 +991,8 @@ h1,h2,h3 {
   .product-card-price { font-size: 1rem; }
   .product-card-meta { flex-direction: column; align-items: flex-start; gap:4px; }
   .btn-sm { padding: 8px 12px; font-size: 0.8rem; }
+  .product-card-actions .btn { white-space: nowrap !important; padding: 6px 4px !important; font-size: 0.72rem !important; }
+  .product-card-actions { padding: 10px !important; gap: 4px; }
   
   /* Skeleton resize for 2 cols */
   .skeleton-card .skeleton[style*="210px"] { height: 160px !important; }
