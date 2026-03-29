@@ -23,7 +23,7 @@ async function seedData() {
 
     console.log('Creating Admin Account...');
     await db.run('INSERT OR IGNORE INTO users (name,roll_number,branch,year,phone,email,password_hash,role) VALUES (?,?,?,?,?,?,?,?)',
-      ['Admin', 'ADMIN001', 'Admin', '0', '0000000000', 'admin@viitmart.com', adminHash, 'admin']);
+      ['Admin', 'ADMIN001', 'Admin', '0', '0000000000', 'admin@nirvanamart.com', adminHash, 'admin']);
 
     console.log('Creating Seller Account (Demo Seller | DEMO001 | 9000000001)...');
     await db.run('INSERT OR IGNORE INTO users (name,roll_number,branch,year,phone,email,password_hash,role) VALUES (?,?,?,?,?,?,?,?)',

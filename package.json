@@ -1,7 +1,7 @@
-{
-  "name": "viit-mart",
+﻿{
+  "name": "nirvana-mart",
   "version": "2.0.0",
-  "description": "VIIT Campus E-commerce Platform",
+  "description": "Nirvana Campus E-commerce Platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: viit-mart
+    name: nirvana-mart
     env: node
     plan: free
     buildCommand: npm install

@@ -74,7 +74,7 @@ app.use(helmet({ contentSecurityPolicy: false })); // disable CSP for inline scr
 app.use(cors({
   origin: (origin, cb) => {
     // Allow requests from the configured origin, localhost, Render domain, or same-origin (no `origin` header)
-    const allowed = [ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://viit-mart.onrender.com'];
+    const allowed = [ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000', 'https://nirvana-mart.onrender.com'];
     if (!origin || allowed.includes(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
@@ -418,7 +418,7 @@ app.post('/api/auth/register',
               <tr><td style="padding:6px 0;color:#94a3b8;">Role</td><td style="font-weight:700;text-transform:capitalize;">${role}</td></tr>
               <tr><td style="padding:6px 0;color:#94a3b8;">Branch</td><td style="font-weight:700;">${branch}, Year ${year}</td></tr>
             </table>
-            <a href="https://viit-mart.onrender.com/shop" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Browse Shop →</a>
+            <a href="https://nirvana-mart.onrender.com/shop" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Browse Shop →</a>
             <p style="margin-top:24px;font-size:0.8rem;color:#475569;">NIRVANA MART — Campus Marketplace</p>
           </div>`
       });
@@ -463,7 +463,7 @@ app.post('/api/auth/admin-login', loginLimiter, async (req, res) => {
       const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
       const result = await db.run(
         'INSERT INTO users (name,roll_number,branch,year,phone,email,password_hash,role) VALUES (?,?,?,?,?,?,?,?)',
-        ['Admin', 'ADMIN001', 'Admin', '0', '0000000000', 'admin@viitmart.com', hash, 'admin']
+        ['Admin', 'ADMIN001', 'Admin', '0', '0000000000', 'admin@nirvanamart.com', hash, 'admin']
       );
       adminUser = await db.get('SELECT * FROM users WHERE id = ?', [result.lastID]);
     }
@@ -756,7 +756,7 @@ app.post('/api/upload', authenticate, upload.single('image'), async (req, res) =
     
     const cloudinaryUpload = () => new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'viitmart' },
+        { folder: 'nirvanamart' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -1222,7 +1222,7 @@ app.get('/api/orders/:id/invoice', authenticate, async (req, res) => {
 
     // Header
     doc.fontSize(24).font('Helvetica-Bold').text('NIRVANA MART', 50, 50);
-    doc.fontSize(10).font('Helvetica').text('Campus Marketplace • VIIT Pune', 50, 80);
+    doc.fontSize(10).font('Helvetica').text('Campus Marketplace • Nirvana Pune', 50, 80);
     doc.moveTo(50, 100).lineTo(545, 100).stroke();
 
     // Invoice details

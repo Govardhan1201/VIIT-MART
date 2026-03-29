@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-//  VIIT Mart Service Worker v1.0
+//  Nirvana Mart Service Worker v1.0
 //  Strategy:  Cache-first for static assets
 //             Network-first for API calls (offline fallback = empty JSON)
 //             Offline fallback = 404.html
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'viitmart-v1';
+const CACHE_NAME = 'nirvanamart-v1';
 const OFFLINE_PAGE = '/404.html';
 
 // Static shell assets — cache on install
@@ -115,13 +115,13 @@ self.addEventListener('fetch', (event) => {
 
 // ─── Push Notifications (future-ready stub) ───────────────────
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? { title: 'VIIT Mart', body: 'You have a new notification!' };
+  const data = event.data?.json() ?? { title: 'Nirvana Mart', body: 'You have a new notification!' };
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/icons/icon-192.svg',
       badge: '/icons/icon-192.svg',
-      tag: 'viitmart-notif',
+      tag: 'nirvanamart-notif',
       renotify: true,
     })
   );

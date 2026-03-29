@@ -1,7 +1,7 @@
 {
-  "name": "VIIT Mart",
-  "short_name": "VIIT Mart",
-  "description": "Campus-exclusive marketplace for VIIT students — buy & sell books, electronics, services and more.",
+  "name": "Nirvana Mart",
+  "short_name": "Nirvana Mart",
+  "description": "Campus-exclusive marketplace for Nirvana students — buy & sell books, electronics, services and more.",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
@@ -43,7 +43,7 @@
       "name": "Login",
       "short_name": "Login",
       "url": "/login.html",
-      "description": "Sign in to VIIT Mart",
+      "description": "Sign in to Nirvana Mart",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
     }
   ]
