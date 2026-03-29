@@ -247,10 +247,13 @@
       Auth.setSession(token, user);
       showToast(`Welcome back, ${user.name}! 🎉`);
       setTimeout(() => {
+        if (user.role === 'seller') {
+          window.location.href = 'seller.html';
+          return;
+        }
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         if (redirect) { window.location.href = redirect; return; }
         if (user.role === 'buyer') window.location.href = 'shop.html';
-        else if (user.role === 'seller') window.location.href = 'seller.html';
       }, 800);
     } catch (err) {
       showToast(err.message || 'Invalid credentials', 'error');
