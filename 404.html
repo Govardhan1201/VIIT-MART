@@ -1,77 +1,397 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 – Page Not Found | NIRVANA MART</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <title>404 — Lost in the Marketplace | VIIT Mart</title>
+  <meta name="description" content="Page not found — VIIT Mart Campus Marketplace">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c8923a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display+SC:wght@700;900&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Outfit', sans-serif;
-      background: #0a0a0f;
-      color: #e2e8f0;
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: #07070e;
+      color: #f0eee8;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Particle Canvas ── */
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── Orb Decorations ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 500px; height: 500px; background: rgba(200,146,58,0.18); top: -150px; right: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: rgba(124,92,191,0.15); bottom: -100px; left: -80px; }
+    .orb-3 { width: 250px; height: 250px; background: rgba(200,146,58,0.1); bottom: 20%; right: 10%; animation: orb-float 10s ease-in-out infinite; }
+
+    @keyframes orb-float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.05)} }
+
+    /* ── Main Content ── */
+    .content-wrap {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 40px 24px;
+      max-width: 680px;
+      width: 100%;
+      animation: content-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes content-in {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Brand Badge ── */
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(200,146,58,0.12);
+      border: 1px solid rgba(200,146,58,0.3);
+      border-radius: 30px;
+      padding: 7px 18px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #e8b86d;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      text-decoration: none;
+    }
+    .brand-badge:hover { background: rgba(200,146,58,0.2); }
+
+    /* ── Glitch 404 Number ── */
+    .error-num-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .error-num {
+      font-family: 'Playfair Display SC', serif;
+      font-size: clamp(7rem, 20vw, 14rem);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, #c8923a 0%, #e8b86d 50%, #f5c85a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 40px rgba(200,146,58,0.5));
+      position: relative;
+      user-select: none;
+    }
+    .error-num::before,
+    .error-num::after {
+      content: '404';
+      position: absolute;
+      inset: 0;
+      font-family: 'Playfair Display SC', serif;
+      font-size: inherit;
+      font-weight: 900;
+      background: none;
+      -webkit-background-clip: border-box;
+      -webkit-text-fill-color: #7c5cbf;
+      background-clip: border-box;
+    }
+    .error-num::before { animation: glitch-top 4s steps(1) infinite; clip-path: polygon(0 0, 100% 0, 100% 32%, 0 32%); }
+    .error-num::after  { animation: glitch-bot 4s steps(1) infinite; clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%); -webkit-text-fill-color: #c8923a; }
+
+    @keyframes glitch-top {
+      0%,90%,100% { transform: none; opacity: 0; }
+      91%          { transform: translate(-4px, -3px) skewX(2deg); opacity: 0.8; }
+      94%          { transform: translate(4px, 0) skewX(-1deg); opacity: 0.6; }
+      97%          { transform: translate(-2px, 2px); opacity: 0.7; }
+    }
+    @keyframes glitch-bot {
+      0%,85%,100% { transform: none; opacity: 0; }
+      86%          { transform: translate(5px, 2px) skewX(-2deg); opacity: 0.7; }
+      89%          { transform: translate(-4px, -1px); opacity: 0.5; }
+      92%          { transform: translate(3px, 3px); opacity: 0.6; }
+    }
+
+    /* ── Floating Campus Items ── */
+    .float-items {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin: -8px 0 24px;
+    }
+    .float-item {
+      font-size: 2.2rem;
+      animation: float-campus 5s ease-in-out infinite;
+      filter: drop-shadow(0 4px 12px rgba(200,146,58,0.3));
+    }
+    .float-item:nth-child(2) { animation-delay: -1.6s; animation-duration: 6s; }
+    .float-item:nth-child(3) { animation-delay: -3.2s; animation-duration: 4.5s; }
+    @keyframes float-campus {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      33%      { transform: translateY(-14px) rotate(3deg); }
+      66%      { transform: translateY(-6px) rotate(-2deg); }
+    }
+
+    /* ── Typography ── */
+    .error-title {
+      font-size: clamp(1.3rem, 4vw, 1.8rem);
+      font-weight: 800;
+      color: #f0eee8;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+    }
+    .error-subtitle {
+      font-size: 1rem;
+      color: #a0a0c4;
+      line-height: 1.7;
+      max-width: 460px;
+      margin: 0 auto 36px;
+    }
+
+    /* ── Action Buttons ── */
+    .action-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .btn-404 {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 28px;
+      border-radius: 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      letter-spacing: 0.02em;
+    }
+    .btn-primary-404 {
+      background: linear-gradient(135deg, #c8923a, #e8b86d);
+      color: white;
+      box-shadow: 0 8px 28px rgba(200,146,58,0.35);
+    }
+    .btn-primary-404:hover { transform: translateY(-3px); box-shadow: 0 14px 38px rgba(200,146,58,0.5); }
+    .btn-ghost-404 {
+      background: rgba(255,255,255,0.05);
+      color: #a0a0c4;
+      border: 1.5px solid rgba(255,255,255,0.1);
+    }
+    .btn-ghost-404:hover { background: rgba(200,146,58,0.08); color: #e8b86d; border-color: rgba(200,146,58,0.3); transform: translateY(-2px); }
+
+    /* ── Countdown ── */
+    .countdown-wrap {
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
+      font-size: 0.83rem;
+      color: #60607a;
+    }
+    .countdown-num {
+      display: inline-block;
+      min-width: 22px;
       text-align: center;
-      padding: 2rem;
-      overflow: hidden;
-    }
-    .bg-glow {
-      position: fixed; inset: 0; pointer-events: none;
-      background: radial-gradient(ellipse at 50% 30%, rgba(108,99,255,0.15) 0%, transparent 70%);
-    }
-    .container { max-width: 600px; width: 100%; z-index: 1; }
-    .code {
-      font-size: clamp(6rem, 20vw, 10rem);
-      font-weight: 900;
-      background: linear-gradient(135deg, #6c63ff, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1;
-      animation: glitch 2s infinite;
-    }
-    @keyframes glitch {
-      0%, 90%, 100% { transform: translate(0); }
-      92% { transform: translate(-3px, 1px); }
-      94% { transform: translate(3px, -1px); }
-      96% { transform: translate(-2px, 2px); }
-    }
-    .title { font-size: 1.6rem; font-weight: 700; margin: 1rem 0 0.5rem; }
-    .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 1rem; }
-    .btn-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      padding: 0.75rem 1.75rem;
-      border-radius: 12px;
       font-weight: 700;
-      font-size: 0.95rem;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: transform 0.2s, opacity 0.2s;
-      font-family: inherit;
+      color: #e8b86d;
     }
-    .btn:hover { transform: translateY(-2px); opacity: 0.9; }
-    .btn-primary { background: linear-gradient(135deg, #6c63ff, #4f46e5); color: #fff; }
-    .btn-ghost { background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); }
-    .icon-wrap { font-size: 2.5rem; margin-bottom: 1rem; }
+
+    /* ── Divider ── */
+    .divider {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(200,146,58,0.5), transparent);
+      margin: 28px auto;
+    }
+
+    /* ── Glassmorphic info card ── */
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(200,146,58,0.12);
+      border-radius: 18px;
+      padding: 18px 24px;
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .glass-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #a0a0c4;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .glass-link:hover { color: #e8b86d; }
+    .glass-link i { font-size: 0.78rem; }
+
+    @media (max-width: 480px) {
+      .float-items { gap: 14px; }
+      .float-item { font-size: 1.7rem; }
+      .action-btns { flex-direction: column; align-items: center; }
+      .btn-404 { width: 100%; max-width: 280px; justify-content: center; }
+    }
   </style>
 </head>
 <body>
-  <div class="bg-glow"></div>
-  <div class="container">
-    <div class="code">404</div>
-    <div class="icon-wrap">🛒</div>
-    <div class="title">Oops! Page Not Found</div>
-    <p class="subtitle">The page you're looking for doesn't exist or has been moved.<br>Let's get you back on track.</p>
-    <div class="btn-group">
-      <a href="/" class="btn btn-primary"><i class="fas fa-home"></i> Go Home</a>
-      <a href="/shop" class="btn btn-ghost"><i class="fas fa-store"></i> Browse Shop</a>
+  <canvas id="particleCanvas"></canvas>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="content-wrap">
+    <!-- Brand -->
+    <a href="/index.html" class="brand-badge">
+      <i class="fas fa-graduation-cap"></i> VIIT Mart
+    </a>
+
+    <!-- Glitch 404 -->
+    <div class="error-num-wrap">
+      <div class="error-num">404</div>
+    </div>
+
+    <!-- Floating campus items -->
+    <div class="float-items">
+      <span class="float-item">🎓</span>
+      <span class="float-item">🛒</span>
+      <span class="float-item">📦</span>
+    </div>
+
+    <!-- Text -->
+    <h1 class="error-title">This page wandered off campus.</h1>
+    <p class="error-subtitle">
+      The product or page you're looking for might have been sold, the link is broken,
+      or it simply doesn't exist in our marketplace.
+    </p>
+
+    <!-- CTA Buttons -->
+    <div class="action-btns">
+      <a href="/index.html" class="btn-404 btn-primary-404">
+        <i class="fas fa-home"></i> Return Home
+      </a>
+      <a href="/shop.html" class="btn-404 btn-ghost-404">
+        <i class="fas fa-store"></i> Browse Shop
+      </a>
+      <button onclick="history.back()" class="btn-404 btn-ghost-404">
+        <i class="fas fa-arrow-left"></i> Go Back
+      </button>
+    </div>
+
+    <!-- Countdown -->
+    <div class="countdown-wrap">
+      <i class="fas fa-clock" style="color:#e8b86d;"></i>
+      Redirecting to homepage in <span class="countdown-num" id="countdown">10</span>s
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Quick links glass card -->
+    <div class="glass-card">
+      <a href="/login.html" class="glass-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+      <a href="/register.html" class="glass-link"><i class="fas fa-user-plus"></i> Sign Up</a>
+      <a href="/buyer.html" class="glass-link"><i class="fas fa-chart-bar"></i> Dashboard</a>
+      <a href="/shop.html?cat=electronics" class="glass-link"><i class="fas fa-laptop"></i> Electronics</a>
+      <a href="/shop.html?cat=books" class="glass-link"><i class="fas fa-book"></i> Books</a>
     </div>
   </div>
+
+  <!-- Minimal particle background -->
+  <script>
+    // Lightweight ambient particles for 404 page
+    (function() {
+      const canvas = document.getElementById('particleCanvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Create particles
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          r: Math.random() * 2 + 0.5,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          alpha: Math.random() * 0.5 + 0.1,
+          color: Math.random() > 0.6 ?
+            `rgba(200, 146, 58, ${Math.random() * 0.5 + 0.1})` :
+            `rgba(124, 92, 191, ${Math.random() * 0.4 + 0.1})`
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = canvas.width;
+          if (p.x > canvas.width) p.x = 0;
+          if (p.y < 0) p.y = canvas.height;
+          if (p.y > canvas.height) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    })();
+
+    // ── Countdown & auto-redirect ──────────────────────────────
+    let count = 10;
+    const countEl = document.getElementById('countdown');
+    const timer = setInterval(() => {
+      count--;
+      countEl.textContent = count;
+      if (count <= 0) {
+        clearInterval(timer);
+        window.location.href = '/index.html';
+      }
+    }, 1000);
+
+    // ── Service Worker ─────────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </body>
 </html>

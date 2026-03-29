@@ -83,7 +83,13 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.webmanifest')) res.setHeader('Content-Type', 'application/manifest+json');
+    if (filePath.endsWith('.svg'))         res.setHeader('Content-Type', 'image/svg+xml');
+    if (filePath.endsWith('sw.js'))        res.setHeader('Service-Worker-Allowed', '/');
+  }
+}));
 
 // Rate limiter: max 10 login attempts per 15 min per IP
 const loginLimiter = rateLimit({
@@ -1289,6 +1295,9 @@ pages.forEach(p => {
 });
 // Admin portal accessible only at hidden URL — not linked publicly
 app.get('/nirvanamart-admin-portal', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
+// Catch-all for 404 Not Found
+app.get('*', (req, res) => res.status(404).sendFile(path.join(__dirname, '404.html')));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 initDb().then(() => {

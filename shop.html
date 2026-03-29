@@ -52,6 +52,12 @@
     .di-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
     @media (max-width: 900px) { .shop-layout { grid-template-columns: 1fr; } .shop-sidebar { position: static; } .cart-drawer { width: 100%; } }
   </style>
+
+  <!-- PWA Manifest & Theme -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/LOGO.png">
 </head>
 <body>
 <canvas id="particleCanvas"></canvas>
@@ -176,8 +182,15 @@
           </div>
         </div>
         <div class="products-grid" id="productsGrid">
-          <!-- Skeleton loaders -->
-          ${Array(8).fill('<div class="product-card"><div class="skeleton" style="height:200px;"></div><div style="padding:16px"><div class="skeleton" style="height:18px;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;width:60%;"></div></div></div>').join('')}
+          <!-- Glassmorphism shimmer skeletons -->
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:62%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:40%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:55%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:45%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:70%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:38%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:50%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:48%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:65%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:42%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:58%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:35%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:72%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:44%;"></div></div></div>
+          <div class="skeleton-card"><div class="skeleton" style="height:210px;border-radius:0;"></div><div style="padding:16px;"><div class="skeleton" style="height:16px;margin-bottom:10px;"></div><div class="skeleton" style="height:13px;width:48%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:52%;"></div></div></div>
         </div>
       </div>
     </div>
@@ -310,7 +323,7 @@ async function loadAllProducts() {
     allProducts = await API.get('/products');
     applyFilters();
   } catch(e) {
-    document.getElementById('productsGrid').innerHTML = '<div class="no-products"><i class="fas fa-exclamation-triangle" style="font-size:3rem;color:var(--accent-red);margin-bottom:16px;"></i><p>Could not load products. Is the server running?</p></div>';
+    document.getElementById('productsGrid').innerHTML = '<div class="empty-state"><span class="empty-state-icon"><i class="fas fa-wifi" style="font-size:3rem;"></i></span><div class="empty-state-title">Could Not Load Products</div><p class="empty-state-desc">Unable to reach the server. Make sure it is running and try again.</p><button class="btn btn-primary btn-sm" onclick="loadAllProducts()"><i class="fas fa-redo"></i> Retry</button></div>';
   }
 }
 
@@ -362,7 +375,7 @@ function handleSearch(val) {
 
 function renderProducts(list) {
   if (!list.length) {
-    document.getElementById('productsGrid').innerHTML = `<div class="no-products" style="grid-column:1/-1;"><i class="fas fa-box-open" style="font-size:3.5rem;color:var(--text-muted);margin-bottom:16px;opacity:0.4;"></i><h3 style="margin-bottom:8px;">No products found</h3><p style="color:var(--text-muted);">Try a different category or search term</p></div>`;
+    document.getElementById('productsGrid').innerHTML = `<div class="empty-state"><span class="empty-state-icon">📦</span><div class="empty-state-title">Nothing Here Yet</div><p class="empty-state-desc">No products match your search or filters. Try a different category or clear your search.</p><a href=\"shop.html\" class=\"btn btn-outline btn-sm\"><i class=\"fas fa-times\"></i> Clear Filters</a></div>`;
     return;
   }
   document.getElementById('productsGrid').innerHTML = list.map(renderProductCard).join('');
@@ -371,13 +384,22 @@ function renderProducts(list) {
   if (window.initCardTilt) initCardTilt();
 }
 
+// ─── Cloudinary Image Optimizer ───────────────────────────────
+// Injects w_{w},q_auto,f_auto into Cloudinary CDN URLs.
+// Non-Cloudinary URLs (Unsplash etc.) pass through unchanged.
+function cloudinaryOptimize(url, w) {
+  if (!url) return '';
+  if (!url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', '/upload/w_' + w + ',q_auto,f_auto/');
+}
+
 function renderProductCard(p) {
   const disc = p.original_price ? Math.round((1 - p.price/p.original_price)*100) : 0;
   const inWl = wishlist.some(w => w.id === p.id);
   return `
     <div class="product-card card-3d" onclick="openProductDetail(${p.id})" style="position:relative;">
       <div style="overflow:hidden;position:relative;">
-        <img src="${p.image_url}" alt="${p.title}" class="product-card-img">
+        <img src="${cloudinaryOptimize(p.image_url, 400)}" alt="${p.title}" class="product-card-img" loading="lazy">
         ${disc>0 ? `<span style="position:absolute;top:10px;left:10px;background:var(--accent-red);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">${disc}% OFF</span>` : ''}
         ${p.eco ? `<span style="position:absolute;top:10px;right:10px;background:rgba(16,185,129,0.9);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">🌿 Eco</span>` : ''}
       </div>
@@ -870,5 +892,14 @@ async function unsendShopChat(id) {
   } catch(e) { showToast(e.message, 'error'); }
 }
 </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
 </body>
+
 </html>

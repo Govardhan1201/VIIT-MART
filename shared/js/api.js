@@ -1,4 +1,4 @@
-﻿// NIRVANA MART API Client
+// NIRVANA MART API Client
 const API_BASE = window.location.protocol === 'file:' 
   ? 'http://localhost:3000/api'
   : '/api';
@@ -23,3 +23,12 @@ const API = {
 };
 
 window.API = API;
+
+// Cloudinary Image Optimizer
+window.optimizeImage = function(url, width = 600) {
+  if (!url) return '';
+  if (url.includes('cloudinary.com') && !url.includes('/upload/w_') && !url.includes('/upload/q_')) {
+    return url.replace('/upload/', `/upload/w_${width},q_auto,f_auto/`);
+  }
+  return url;
+};

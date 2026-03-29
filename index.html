@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -440,6 +440,12 @@
       .hero-visual { min-height: 280px; }
     }
   </style>
+
+  <!-- PWA Manifest & Theme -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/LOGO.png">
 </head>
 
 <body>
@@ -839,7 +845,12 @@
     }
 
     // Load best-sellers from API
-    async function loadBestSellers() {
+    function cloudinaryOptimize(url, w) {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', '/upload/w_' + w + ',q_auto,f_auto/');
+}
+
+async function loadBestSellers() {
       try {
         const products = await API.get('/products/bestsellers');
         const grid = document.getElementById('bestsellersGrid');
@@ -848,7 +859,7 @@
           const disc = p.original_price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
           return `<div class="product-card card-3d" onclick="window.location.href='shop.html'" style="cursor:pointer;">
           <div style="overflow:hidden;position:relative;">
-            <img src="${p.image_url}" alt="${p.title}" class="product-card-img" loading="lazy">
+            <img src="${cloudinaryOptimize(p.image_url, 400)}" alt="${p.title}" class="product-card-img" loading="lazy" loading="lazy">
             ${disc > 0 ? `<span style="position:absolute;top:10px;left:10px;background:var(--accent-red);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">${disc}% OFF</span>` : ''}
             ${p.eco ? `<span style="position:absolute;top:10px;right:10px;background:rgba(16,185,129,0.9);color:white;padding:3px 9px;border-radius:6px;font-size:0.75rem;font-weight:800;">🌿 Eco</span>` : ''}
           </div>
@@ -1081,6 +1092,15 @@
       }, 900);
     }
   </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
 </body>
+
 
 </html>

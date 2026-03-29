@@ -1,0 +1,50 @@
+{
+  "name": "VIIT Mart",
+  "short_name": "VIIT Mart",
+  "description": "Campus-exclusive marketplace for VIIT students — buy & sell books, electronics, services and more.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#c8923a",
+  "background_color": "#07070e",
+  "lang": "en",
+  "categories": ["shopping", "education"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Shop",
+      "short_name": "Shop",
+      "url": "/shop.html",
+      "description": "Browse all campus products",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Dashboard",
+      "short_name": "Dashboard",
+      "url": "/buyer.html",
+      "description": "View your orders and analytics",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Login",
+      "short_name": "Login",
+      "url": "/login.html",
+      "description": "Sign in to VIIT Mart",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

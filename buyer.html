@@ -36,6 +36,12 @@
     .notif-dot.read { background: var(--border-color); }
     @media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } .dash-sidebar { position: static; } }
   </style>
+
+  <!-- PWA Manifest & Theme -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/LOGO.png">
 </head>
 <body>
 <canvas id="particleCanvas"></canvas>
@@ -286,6 +292,11 @@
 <script src="shared/js/notifications.js"></script>
 <script>
 let currentUser = null;
+// ─── Cloudinary URL Optimizer ─────────────────────────────────
+function cloudinaryOptimize(url, w) {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', '/upload/w_' + w + ',q_auto,f_auto/');
+}
 let allOrders = [];
 let _catChart = null, _barChart = null;
 const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6','#ec4899','#14b8a6'];
@@ -639,5 +650,14 @@ function showSection(id, navItem) {
   }
 }
 </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
 </body>
+
 </html>
