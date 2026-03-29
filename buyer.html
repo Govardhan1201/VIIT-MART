@@ -658,6 +658,39 @@ function showSection(id, navItem) {
       });
     }
   </script>
+<!-- ─── Mobile Bottom Navigation ─── -->
+<nav class="mobile-bottom-nav">
+  <a href="index.html" class="bottom-nav-item" id="bn-home">
+    <i class="fas fa-home"></i><span>Home</span>
+  </a>
+  <a href="shop.html" class="bottom-nav-item" id="bn-shop">
+    <i class="fas fa-store"></i><span>Shop</span>
+  </a>
+  <a href="shop.html?cart=1" class="bottom-nav-item" id="bn-cart">
+    <div style="position:relative;">
+      <i class="fas fa-shopping-bag"></i>
+      <span class="bottom-nav-badge" id="mobileCartCount">0</span>
+    </div>
+    <span>Cart</span>
+  </a>
+  <a href="buyer.html" class="bottom-nav-item" id="bn-profile">
+    <i class="fas fa-user-circle"></i><span>Profile</span>
+  </a>
+</nav>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const p = location.pathname;
+  if(p.includes('shop')) document.getElementById('bn-shop')?.classList.add('active');
+  else if(p.includes('buyer')||p.includes('seller')) document.getElementById('bn-profile')?.classList.add('active');
+  else document.getElementById('bn-home')?.classList.add('active');
+  
+  try {
+    const c = JSON.parse(localStorage.getItem('nirvana_cart')) || [];
+    const cnt = document.getElementById('mobileCartCount');
+    if(cnt) cnt.innerText = c.length;
+  } catch(e){}
+});
+</script>
 </body>
 
 </html>
