@@ -615,7 +615,6 @@ app.post('/api/orders', authenticate, async (req, res) => {
   try {
     if (req.user.role === 'seller') return res.status(403).json({ error: 'Sellers cannot place orders' });
     const { items, paymentMethod } = req.body;
-    const LISTING_FEE = 15;
     const createdOrders = [];
     const admin = await db.get("SELECT roll_number FROM users WHERE role = 'admin'");
 
@@ -623,15 +622,17 @@ app.post('/api/orders', authenticate, async (req, res) => {
       const product = await db.get('SELECT * FROM products WHERE id = ? AND status = ?', [item.id, 'approved']);
       if (!product) continue;
 
-      const serviceFee = calcServiceFee(product.price);
-      const platformCharge = product.platform_charge || 0;
+      // Use the exact fees admin set at approval time; fall back gracefully if not set
+      const listingFee = Number(product.listing_fee) || 0;
+      const serviceFee = Number(product.service_fee) || calcServiceFee(product.price);
+      const platformCharge = Number(product.platform_charge) || 0;
       const totalPaid = product.price + serviceFee + platformCharge;
-      const sellerPayout = Math.max(0, product.price - LISTING_FEE);
+      const sellerPayout = Math.max(0, product.price - listingFee);
       const orderId = `${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
 
       await db.run(
         "INSERT INTO orders (id,product_id,product_title,product_image,buyer_roll,buyer_name,buyer_phone,seller_roll,seller_name,seller_phone,payment_method,product_price,service_fee,platform_charge,total_paid,listing_fee,seller_payout,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')",
-        [orderId, product.id, product.title, product.image_url, req.user.rollNumber, req.user.name, req.user.phone, product.seller_roll, product.seller_name, product.seller_phone, paymentMethod, product.price, serviceFee, platformCharge, totalPaid, LISTING_FEE, sellerPayout]
+        [orderId, product.id, product.title, product.image_url, req.user.rollNumber, req.user.name, req.user.phone, product.seller_roll, product.seller_name, product.seller_phone, paymentMethod, product.price, serviceFee, platformCharge, totalPaid, listingFee, sellerPayout]
       );
       await db.run('UPDATE products SET quantity = MAX(0, quantity - 1) WHERE id = ?', [product.id]);
       // Auto-delete product when stock hits 0
@@ -651,8 +652,8 @@ app.post('/api/orders', authenticate, async (req, res) => {
           [admin.roll_number, '📦 New Order', `${req.user.name} ordered "${product.title}" (₹${totalPaid})`]);
         io.to(`user:${admin.roll_number}`).emit('notification:new');
       }
-      await db.run('UPDATE earnings SET service_fees=service_fees+?, listing_fees=listing_fees+?, total=total+? WHERE id=1',
-        [serviceFee, LISTING_FEE, serviceFee + LISTING_FEE]);
+      await db.run('UPDATE earnings SET service_fees=service_fees+?, listing_fees=listing_fees+?, extra_charges=extra_charges+?, total=total+? WHERE id=1',
+        [serviceFee, listingFee, platformCharge, serviceFee + listingFee + platformCharge]);
         
       createdOrders.push({ id: orderId, title: product.title, price: product.price, sellerRoll: product.seller_roll });
     }

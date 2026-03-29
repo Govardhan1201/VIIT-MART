@@ -533,14 +533,23 @@
         return;
       }
       el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
-        <thead><tr><th>Order ID</th><th>Product</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Payment</th><th>Status</th><th>Update</th></tr></thead>
+        <thead><tr><th>Order ID</th><th>Product</th><th>Buyer</th><th>Seller</th><th>Price Breakdown</th><th>Payment</th><th>Status</th><th>Update</th></tr></thead>
         <tbody>${orders.map(o => `
           <tr>
             <td style="font-size:0.75rem;color:var(--text-muted);">${o.id.substring(0,12)}...</td>
             <td style="font-weight:700;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.product_title}</td>
             <td><div style="font-weight:700;font-size:0.85rem;">${o.buyer_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${o.buyer_phone}</div></td>
             <td><div style="font-weight:700;font-size:0.85rem;">${o.seller_name}</div><div style="font-size:0.75rem;color:var(--text-muted);">${o.seller_phone}</div></td>
-            <td style="font-weight:800;color:var(--accent-primary);">₹${o.total_paid.toLocaleString()}</td>
+            <td style="min-width:190px;">
+              <div style="font-size:0.78rem;line-height:1.7;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Product Price</span><span style="font-weight:700;">₹${(o.product_price||0).toLocaleString()}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#f59e0b;">+ Service Fee (Buyer)</span><span style="font-weight:700;color:#f59e0b;">₹${(o.service_fee||0).toLocaleString()}</span></div>
+                ${o.platform_charge ? `<div style="display:flex;justify-content:space-between;"><span style="color:#8b5cf6;">+ Platform Charge</span><span style="font-weight:700;color:#8b5cf6;">₹${(o.platform_charge||0).toLocaleString()}</span></div>` : ''}
+                <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border-color);margin-top:3px;padding-top:3px;"><span style="font-weight:800;">Buyer Pays</span><span style="font-weight:900;color:var(--accent-primary);">₹${(o.total_paid||0).toLocaleString()}</span></div>
+                <div style="display:flex;justify-content:space-between;margin-top:2px;"><span style="color:#ef4444;">− Listing Fee (Seller)</span><span style="font-weight:700;color:#ef4444;">₹${(o.listing_fee||0).toLocaleString()}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#10b981;font-weight:700;">Seller Gets</span><span style="font-weight:900;color:#10b981;">₹${(o.seller_payout||0).toLocaleString()}</span></div>
+              </div>
+            </td>
             <td style="font-size:0.8rem;font-weight:700;">${o.payment_method}</td>
             <td><span class="status-badge status-${o.status.replace(/ /g,'-').replace(/\//g,'')}">${o.status.replace(/-/g,' ')}</span></td>
             <td>
