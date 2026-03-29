@@ -6,6 +6,7 @@
   <title>Admin Portal — VIIT Mart</title>
   <link rel="stylesheet" href="shared/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     :root { --admin-accent: #6366f1; }
     .admin-login-page {
@@ -172,6 +173,12 @@
             <div class="admin-card-title">⏳ Pending Product Approvals</div>
             <button class="btn btn-ghost btn-sm" onclick="loadApprovals()"><i class="fas fa-sync"></i> Refresh</button>
           </div>
+          <div style="background:rgba(245,158,11,0.08);border:1.5px solid rgba(245,158,11,0.3);border-radius:14px;margin:16px 24px 0;padding:14px 18px;font-size:0.87rem;">
+            <strong style="color:#f59e0b;">💡 How Fees Work:</strong> When you <strong>Approve</strong> a product below, set the fees for that listing.<br>
+            <span style="color:var(--text-muted);">• <b>Listing Fee</b> — charged to the <b>Seller</b> for listing (platform revenue)<br>
+            • <b>Service Fee</b> — charged to the <b>Buyer</b> on top of product price (platform revenue)<br>
+            • <b>Extra Charge</b> — any additional platform charge (optional)</span>
+          </div>
           <div class="admin-card-body" id="approvalsContent"><p style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</p></div>
         </div>
       </div>
@@ -218,22 +225,38 @@
 
       <!-- Analytics -->
       <div id="admin-analytics" class="admin-section">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;" id="analyticsStats">
-          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-val" id="ana-revenue">—</div></div>
-          <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="ana-orders">—</div></div>
-          <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-val" id="ana-avg">—</div></div>
+        <!-- Summary Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;">
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(16,185,129,0.12);">💰</div><div class="admin-stat-val gradient-text" id="ana-revenue">—</div><div class="admin-stat-label">Total Revenue</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(59,130,246,0.12);">🛒</div><div class="admin-stat-val" id="ana-orders">—</div><div class="admin-stat-label">Total Orders</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(139,92,246,0.12);">📊</div><div class="admin-stat-val" id="ana-avg">—</div><div class="admin-stat-label">Avg Order Value</div></div>
         </div>
+        <!-- Charts Row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <div class="admin-card">
+            <div class="admin-card-header"><div class="admin-card-title">🥧 Sales by Category</div></div>
+            <div class="admin-card-body" style="padding:24px;display:flex;justify-content:center;align-items:center;min-height:280px;">
+              <canvas id="categoryPieChart" style="max-height:260px;"></canvas>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-header"><div class="admin-card-title">📊 Order Status Breakdown</div></div>
+            <div class="admin-card-body" style="padding:24px;display:flex;justify-content:center;align-items:center;min-height:280px;">
+              <canvas id="statusDoughnutChart" style="max-height:260px;"></canvas>
+            </div>
+          </div>
+        </div>
+        <!-- Top Products Bar Chart -->
         <div class="admin-card" style="margin-bottom:20px;">
-          <div class="admin-card-header"><div class="admin-card-title">📈 Top Products by Orders</div></div>
-          <div class="admin-card-body" id="topProductsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+          <div class="admin-card-header"><div class="admin-card-title">📈 Top Products by Revenue</div></div>
+          <div class="admin-card-body" style="padding:24px;min-height:220px;">
+            <canvas id="topProductsBarChart" style="max-height:220px;"></canvas>
+          </div>
         </div>
-        <div class="admin-card" style="margin-bottom:20px;">
-          <div class="admin-card-header"><div class="admin-card-title">🔵 Order Status Funnel</div></div>
-          <div class="admin-card-body" id="funnelContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
-        </div>
+        <!-- Top Products List -->
         <div class="admin-card">
-          <div class="admin-card-header"><div class="admin-card-title">📦 Sales by Category</div></div>
-          <div class="admin-card-body" id="categoryStatsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
+          <div class="admin-card-header"><div class="admin-card-title">🏆 Top 5 Products by Orders</div></div>
+          <div class="admin-card-body" id="topProductsContent" style="padding:20px;"><p style="text-align:center;color:var(--text-muted);">Loading...</p></div>
         </div>
       </div>
 
@@ -318,16 +341,21 @@
 <script>
   let adminUser = null;
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Check if admin session exists
+  document.addEventListener('DOMContentLoaded', async () => {
     const saved = localStorage.getItem('vm_admin_token');
     if (saved) {
-      // Validate by loading stats
       localStorage.setItem('vm_token', saved);
       const savedUser = JSON.parse(localStorage.getItem('vm_admin_user') || 'null');
       if (savedUser && savedUser.role === 'admin') {
         adminUser = savedUser;
-        showDashboard();
+        // Validate token is still alive before showing dashboard
+        try {
+          await API.get('/admin/stats');
+          showDashboard();
+        } catch(e) {
+          // Token expired or server restarted — force re-login
+          adminForceLogout();
+        }
       }
     }
   });
@@ -370,6 +398,17 @@
     window.location.href = 'index.html';
   }
 
+  function adminForceLogout() {
+    localStorage.removeItem('vm_admin_token');
+    localStorage.removeItem('vm_admin_user');
+    localStorage.removeItem('vm_token');
+    localStorage.removeItem('vm_user');
+    // Show login screen again without redirecting away
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('adminLoginScreen').style.display = 'flex';
+    showToast('Session expired. Please log in again.', 'error');
+  }
+
   async function loadStats() {
     try {
       const stats = await API.get('/admin/stats');
@@ -404,7 +443,14 @@
         b.textContent = stats.pendingProducts;
         b.style.display = 'inline';
       }
-    } catch(e) { showToast('Failed to load stats. Is server running?', 'error'); }
+    } catch(e) {
+      console.error('Stats load failed:', e);
+      if (e.message && (e.message.includes('401') || e.message.includes('403') || e.message.toLowerCase().includes('token') || e.message.toLowerCase().includes('expired'))) {
+        adminForceLogout();
+      } else {
+        showToast('Failed to load stats: ' + (e.message || 'Check server connection'), 'error');
+      }
+    }
   }
 
   async function loadApprovals() {
@@ -668,29 +714,93 @@
   }
 
   // ─── Analytics ────────────────────────────────────────────────
+  let _catPieChart = null, _statusChart = null, _barChart = null;
+  const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6','#ec4899','#14b8a6'];
+  
+  function destroyCharts() {
+    if (_catPieChart) { _catPieChart.destroy(); _catPieChart = null; }
+    if (_statusChart) { _statusChart.destroy(); _statusChart = null; }
+    if (_barChart) { _barChart.destroy(); _barChart = null; }
+  }
+
   async function loadAnalytics() {
+    destroyCharts();
     try {
       const data = await API.get('/admin/analytics');
+      
       // Stats
       document.getElementById('ana-revenue').textContent = `₹${(data.totalRevenue||0).toLocaleString()}`;
       document.getElementById('ana-orders').textContent = data.totalOrders||0;
       document.getElementById('ana-avg').textContent = data.totalOrders ? `₹${Math.round(data.totalRevenue/data.totalOrders).toLocaleString()}` : '₹0';
-      // Top Products
-      document.getElementById('topProductsContent').innerHTML = (data.topProducts||[]).length
-        ? (data.topProducts.slice(0,5).map((p,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;align-items:center;gap:12px;"><span style="font-weight:900;font-size:0.82rem;width:24px;color:var(--accent-primary);">#${i+1}</span><div><div style="font-weight:700;font-size:0.9rem;">${p.title}</div><div style="font-size:0.75rem;color:var(--text-muted);">${p.orders} orders</div></div></div><div style="font-weight:800;color:var(--accent-primary);">₹${(p.revenue||0).toLocaleString()}</div></div>`).join(''))
-        : '<p style="text-align:center;color:var(--text-muted);">No order data yet</p>';
-      // Funnel
-      document.getElementById('funnelContent').innerHTML = (data.statusFunnel||[]).length
-        ? (data.statusFunnel.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);"><span style="font-weight:600;text-transform:capitalize;">${s.status.replace(/-/g,' ')}</span><span class="status-badge status-${s.status}">${s.count}</span></div>`).join(''))
-        : '<p style="text-align:center;color:var(--text-muted);">No orders yet</p>';
-      // Category sales
+
+      const chartDefaults = {
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12, weight: '600' } } } }
+      };
+
+      // 1. Category Sales Pie Chart
       const catData = data.categorySales || [];
-      const catMax = Math.max(...catData.map(c => c.revenue), 1);
-      document.getElementById('categoryStatsContent').innerHTML = catData.length
-        ? catData.map(c => `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.88rem;font-weight:600;"><span style="text-transform:capitalize;">${c.category}</span><span>₹${(c.revenue||0).toLocaleString()} (${c.count} sales)</span></div><div style="height:8px;background:var(--border-color);border-radius:4px;"><div style="height:100%;width:${Math.round(c.revenue/catMax*100)}%;background:var(--gradient-accent);border-radius:4px;transition:width 1s;"></div></div></div>`).join('')
-        : '<p style="text-align:center;color:var(--text-muted);">No sales data yet</p>';
+      if (catData.length) {
+        _catPieChart = new Chart(document.getElementById('categoryPieChart'), {
+          type: 'pie',
+          data: {
+            labels: catData.map(c => c.category.charAt(0).toUpperCase()+c.category.slice(1)),
+            datasets: [{ data: catData.map(c => c.revenue||0), backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: '#1a1a2e' }]
+          },
+          options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.toLocaleString()} (${catData[ctx.dataIndex].count} sales)` } } } }
+        });
+      } else {
+        document.getElementById('categoryPieChart').closest('.admin-card-body').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No sales data yet</p>';
+      }
+
+      // 2. Order Status Doughnut Chart
+      const funnel = data.statusFunnel || [];
+      if (funnel.length) {
+        _statusChart = new Chart(document.getElementById('statusDoughnutChart'), {
+          type: 'doughnut',
+          data: {
+            labels: funnel.map(s => s.status.replace(/-/g,' ')),
+            datasets: [{ data: funnel.map(s => s.count), backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: '#1a1a2e' }]
+          },
+          options: { ...chartDefaults, cutout: '62%' }
+        });
+      } else {
+        document.getElementById('statusDoughnutChart').closest('.admin-card-body').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No orders yet</p>';
+      }
+
+      // 3. Top Products Bar Chart
+      const top = (data.topProducts||[]).slice(0,6);
+      if (top.length) {
+        _barChart = new Chart(document.getElementById('topProductsBarChart'), {
+          type: 'bar',
+          data: {
+            labels: top.map(p => p.title.length > 18 ? p.title.substring(0,18)+'…' : p.title),
+            datasets: [{
+              label: 'Revenue (₹)', data: top.map(p => p.revenue||0),
+              backgroundColor: CHART_COLORS.slice(0,top.length),
+              borderRadius: 8, borderSkipped: false
+            }]
+          },
+          options: {
+            ...chartDefaults,
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(148,163,184,0.08)' } },
+              y: { ticks: { color: '#94a3b8', callback: v => '₹'+v.toLocaleString() }, grid: { color: 'rgba(148,163,184,0.08)' } }
+            },
+            plugins: { ...chartDefaults.plugins, legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.y.toLocaleString()} | ${top[ctx.dataIndex].orders} orders` } } }
+          }
+        });
+      } else {
+        document.getElementById('topProductsBarChart').closest('.admin-card-body').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:40px;">No order data yet</p>';
+      }
+
+      // 4. Top Products list
+      document.getElementById('topProductsContent').innerHTML = top.length
+        ? top.map((p,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color);"><div style="display:flex;align-items:center;gap:12px;"><span style="font-weight:900;font-size:0.9rem;width:28px;height:28px;background:rgba(99,102,241,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent-primary);">${i+1}</span><div><div style="font-weight:700;font-size:0.9rem;">${p.title}</div><div style="font-size:0.75rem;color:var(--text-muted);">${p.orders} orders</div></div></div><div style="font-weight:800;color:var(--accent-primary);">₹${(p.revenue||0).toLocaleString()}</div></div>`).join('')
+        : '<p style="text-align:center;color:var(--text-muted);">No order data yet</p>';
+
     } catch(e) { document.getElementById('topProductsContent').innerHTML = '<p style="color:var(--accent-red);">Failed to load analytics</p>'; }
   }
+
 
   // ─── Coupons ──────────────────────────────────────────────────
   async function loadDiscounts() {

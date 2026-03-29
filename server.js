@@ -753,6 +753,7 @@ app.put('/api/notifications/read', authenticate, async (req, res) => {
 
 // ─── ADMIN STATS & ANALYTICS ──────────────────────────────────────────────────
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  console.log('GET /api/admin/stats called by:', req.user.rollNumber);
   try {
     const users = await db.get("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
     const products = await db.get("SELECT COUNT(*) as count FROM products WHERE status = 'approved'");
@@ -835,7 +836,24 @@ function calcServiceFee(price) {
   return Math.min(1000, Math.round(price * 0.02));
 }
 
+
 // ─── REVIEWS ──────────────────────────────────────────────────────────────────
+
+// Public: latest reviews across the whole platform (for homepage)
+app.get('/api/reviews/platform', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const reviews = await db.all(`
+      SELECT r.id, r.rating, r.comment, r.reviewer_name, r.reviewer_roll, r.created_at, p.title as product_title
+      FROM reviews r
+      JOIN products p ON r.product_id = p.id
+      WHERE r.rating >= 4
+      ORDER BY r.created_at DESC
+      LIMIT ?`, [limit]);
+    res.json(reviews);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/reviews/:productId', async (req, res) => {
   try { res.json(await db.all('SELECT * FROM reviews WHERE product_id = ? ORDER BY created_at DESC', [req.params.productId])); }
   catch (err) { res.status(500).json({ error: err.message }); }
