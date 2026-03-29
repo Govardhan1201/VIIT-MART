@@ -253,6 +253,14 @@ async function initDb() {
       branch TEXT NOT NULL,
       year TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS site_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reviewer_roll TEXT NOT NULL,
+      reviewer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 5,
+      comment TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
   try { await db.exec("ALTER TABLE products ADD COLUMN images_json TEXT DEFAULT '[]'"); } catch(e) {}
   await db.run('INSERT OR IGNORE INTO earnings (id) VALUES (1)');
@@ -840,18 +848,26 @@ function calcServiceFee(price) {
 
 // ─── REVIEWS ──────────────────────────────────────────────────────────────────
 
-// Public: latest reviews across the whole platform (for homepage)
+// Public: platform reviews = site reviews + product reviews merged for homepage
 app.get('/api/reviews/platform', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const reviews = await db.all(`
+    // Site reviews (explicit website feedback)
+    const siteReviews = await db.all(
+      'SELECT id, rating, comment, reviewer_name, reviewer_roll, created_at, NULL as product_title FROM site_reviews WHERE rating >= 4 ORDER BY created_at DESC LIMIT ?',
+      [limit]);
+    // Product reviews (from purchased products)
+    const productReviews = await db.all(`
       SELECT r.id, r.rating, r.comment, r.reviewer_name, r.reviewer_roll, r.created_at, p.title as product_title
-      FROM reviews r
-      JOIN products p ON r.product_id = p.id
-      WHERE r.rating >= 4
-      ORDER BY r.created_at DESC
-      LIMIT ?`, [limit]);
-    res.json(reviews);
+      FROM reviews r JOIN products p ON r.product_id = p.id
+      WHERE r.rating >= 4 ORDER BY r.created_at DESC LIMIT ?`, [limit]);
+    // Merge, deduplicate by roll, sort newest first
+    const seen = new Set();
+    const all = [...siteReviews, ...productReviews]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .filter(r => { if (seen.has(r.reviewer_roll)) return false; seen.add(r.reviewer_roll); return true; })
+      .slice(0, limit);
+    res.json(all);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -881,6 +897,39 @@ app.delete('/api/reviews/:id', requireAdmin, async (req, res) => {
   try { await db.run('DELETE FROM reviews WHERE id = ?', [req.params.id]); res.json({ success: true }); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ─── SITE REVIEWS (Website-level reviews shown on homepage) ───────────────────
+app.post('/api/site-reviews', authenticate, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating 1-5 required' });
+    const existing = await db.get('SELECT id FROM site_reviews WHERE reviewer_roll = ?', [req.user.rollNumber]);
+    if (existing) {
+      await db.run('UPDATE site_reviews SET rating=?, comment=?, created_at=datetime("now") WHERE reviewer_roll=?',
+        [rating, comment || '', req.user.rollNumber]);
+    } else {
+      await db.run('INSERT INTO site_reviews (reviewer_roll, reviewer_name, rating, comment) VALUES (?,?,?,?)',
+        [req.user.rollNumber, req.user.name, rating, comment || '']);
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/site-reviews', async (req, res) => {
+  try {
+    const reviews = await db.all('SELECT * FROM site_reviews WHERE rating >= 4 ORDER BY created_at DESC LIMIT 50');
+    res.json(reviews);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Buyer: get own site review
+app.get('/api/site-reviews/mine', authenticate, async (req, res) => {
+  try {
+    const review = await db.get('SELECT * FROM site_reviews WHERE reviewer_roll = ?', [req.user.rollNumber]);
+    res.json(review || null);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 
 // Admin: fetch all reviews across the platform
 app.get('/api/admin/reviews', requireAdmin, async (req, res) => {
